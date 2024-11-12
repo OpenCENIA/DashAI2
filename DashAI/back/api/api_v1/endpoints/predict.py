@@ -1,20 +1,11 @@
 import logging
-from typing import Any, Dict, List, Union
 
-import pandas as pd
-from datasets import Dataset
-from fastapi import APIRouter, Depends, UploadFile, status
+from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
-from sqlalchemy import exc
 from sqlalchemy.orm import sessionmaker
 
-from DashAI.back.api.api_v1.schemas.predict_params import PredictParams
-from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
-from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
-from DashAI.back.dependencies.database.models import Experiment, Run
-from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.models.base_model import BaseModel
+from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -24,113 +15,98 @@ router = APIRouter()
 
 @router.get("/")
 @inject
-async def get_prediction():
-    """Placeholder for prediction get.
-
-    Raises
-    ------
-    HTTPException
-        Always raises exception as it was intentionally not implemented.
-    """
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Method not implemented"
-    )
-
-
-@router.post("/")
-@inject
-async def predict(
-    input_file: UploadFile,
-    params: PredictParams = Depends(),
-    component_parent: Union[str, None] = None,
-    component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
+async def get_prediction_tab(
+    table: str,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
-    config: Dict[str, Any] = Depends(lambda: di["config"]),
-) -> List[Any]:
-    """Predict using a particular model.
+):
+    """
+    Fetches data based on the specified table parameter.
 
     Parameters
     ----------
-    input_file: UploadFile
-        File containing the sample data to be used for prediction.
-        The format of the sample data must match the format of the data set used to
-        train the run.
-    run_id: int
-        Id of the run to be used to predict.
-    component_registry : ComponentRegistry
-        Registry containing the current app available components.
-    session_factory : Callable[..., ContextManager[Session]]
-        A factory that creates a context manager that handles a SQLAlchemy session.
-        The generated session can be used to access and query the database.
-    config: Dict[str, Any]
-        Application settings.
-
-    Returns
-    -------
-    List
-        A list with the predictions given by the run.
-        The type of each prediction is given by the task associated with the run.
+    table : str
+        A parameter that determines the type of data to fetch.
+        - If 'PredictionTable', returns prediction-related data.
+        - If 'SelectModelStep', returns model selection-related data.
 
     Raises
     ------
     HTTPException
-        If run_id does not exist in the database.
-        If experiment_id assoc. with the run does not exist in the database.
-        If dataset_id assoc. with the experiment does not exist in the database.
+        "No data found" if no data is found.
+
+    Returns
+    -------
+    dict
+        A dictionary containing the fetched data based on the table parameter.
     """
     with session_factory() as db:
-        try:
-            run: Run = db.get(Run, params.run_id)
-            if not run:
+        if table == "PredictionTable/":
+            query_results = (
+                db.query(
+                    Experiment.task_name,
+                    Run.model_name.label("run_type"),
+                    Dataset.name.label("dataset_name"),
+                    Dataset.id.label("dataset_id"),
+                    Dataset.model_name.label("dataset_model_name"),
+                    Dataset.last_modified,
+                )
+                .filter(Dataset.prediction_status)
+                .all()
+            )
+
+            if not query_results:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Run not found"
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No data found",
                 )
 
-            exp: Experiment = db.get(Experiment, run.experiment_id)
-            if not exp:
+            prediction_data = [
+                {
+                    "id": result.dataset_id,
+                    "last_modified": result.last_modified,
+                    "run_name": result.run_type,
+                    "model_name": result.dataset_model_name,
+                    "dataset_name": result.dataset_name,
+                    "task_name": result.task_name,
+                }
+                for result in query_results
+            ]
+            return prediction_data
+
+        elif table == "SelectModelStep/":
+            query_results = (
+                db.query(
+                    Experiment.id.label("experiment_id"),
+                    Experiment.name.label("experiment_name"),
+                    Experiment.created,
+                    Experiment.task_name,
+                    Run.name.label("run_name"),
+                    Run.model_name,
+                    Dataset.name.label("dataset_name"),
+                )
+                .join(Experiment, Experiment.id == Run.experiment_id)
+                .join(Dataset, Experiment.dataset_id == Dataset.id)
+                .all()
+            )
+            if not query_results:
                 raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND, detail="Experiment not found"
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No data found",
                 )
 
-        except exc.SQLAlchemyError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Internal database error",
-            ) from e
-
-    model = component_registry[run.model_name]["class"]
-    trained_model: BaseModel = model.load(run.run_path)
-
-    # Load Dataset using Dataloader
-    tmp_path = config["DATASETS_PATH"] / "tmp_predict" / str(params.run_id)
-
-    try:
-        logger.debug("Trying to create a new dataset path: %s", tmp_path)
-        tmp_path.mkdir(parents=True, exist_ok=False)
-    except FileExistsError as e:
-        logger.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A dataset with this name already exists",
-        ) from e
-
-    dataloader: BaseDataLoader = component_registry["JSONDataLoader"]["class"]()
-    raw_dataset = dataloader.load_data(
-        filepath_or_buffer=input_file,
-        temp_path=str(tmp_path),
-        params={"data_key": "data"},
-    )
-    # TODO Extract this Code to DashAIDataset
-    input_df = pd.DataFrame(raw_dataset["train"])
-    input_df = input_df.reindex(columns=exp.input_columns)
-    raw_dataset["train"] = Dataset.from_pandas(input_df)
-    # ---------------------------------------
-    dataset = to_dashai_dataset(raw_dataset)
-
-    y_pred = trained_model.predict(dataset["train"])
-
-    return y_pred.tolist()
+            prediction_data = [
+                {
+                    "id": result.experiment_id,
+                    "experiment_name": result.experiment_name,
+                    "created": result.created,
+                    "run_name": result.run_name,
+                    "task_name": result.task_name,
+                    "model_name": result.model_name,
+                    "dataset_name": result.dataset_name,
+                }
+                for result in query_results
+            ]
+            return prediction_data
 
 
 @router.delete("/")

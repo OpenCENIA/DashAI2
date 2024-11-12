@@ -224,7 +224,7 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
             color="primary"
             disabled={!nextEnabled}
           >
-            {activeStep === 2 ? "Save" : "Next"}
+            {activeStep === 1 ? "Save" : "Next"}
           </Button>
         </ButtonGroup>
       </DialogActions>

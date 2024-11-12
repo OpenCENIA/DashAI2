@@ -1,6 +1,7 @@
 import logging
 import os
 import shutil
+from pathlib import Path
 from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
@@ -135,7 +136,7 @@ async def get_sample(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Dataset not found",
                 )
-            dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
+            dataset: DashAIDataset = load_dataset(str(Path(f"{file_path}/dataset")))
             sample = dataset["train"].sample(n=10)
         except exc.SQLAlchemyError as e:
             logger.exception(e)
@@ -278,6 +279,9 @@ async def upload_dataset(
 
     # save dataset
     try:
+        if parsed_params.for_predictions:
+            parsed_params.shuffle = False
+            parsed_params.statify = False
         logger.debug("Storing dataset in %s", folder_path)
         new_dataset = dataloader.load_data(
             filepath_or_buffer=file if file is not None else url,
@@ -286,8 +290,9 @@ async def upload_dataset(
         )
 
         new_dataset = to_dashai_dataset(new_dataset)
+        dataset_path = folder_path / "dataset"
 
-        if not parsed_params.splits_in_folders:
+        if not parsed_params.splits_in_folders and not parsed_params.for_predictions:
             n = len(new_dataset["train"])
             train_indexes, test_indexes, val_indexes = split_indexes(
                 n,
@@ -303,7 +308,7 @@ async def upload_dataset(
                 test_indexes=test_indexes,
                 val_indexes=val_indexes,
             )
-            dataset_path = folder_path / "dataset"
+
         logger.debug("Saving dataset in %s", str(dataset_path))
         save_dataset(new_dataset, dataset_path)
 
@@ -326,10 +331,17 @@ async def upload_dataset(
         logger.debug("Storing dataset metadata in database.")
         try:
             folder_path = os.path.realpath(folder_path)
-            new_dataset = Dataset(
-                name=parsed_params.name,
-                file_path=folder_path,
-            )
+            if parsed_params.for_predictions:
+                new_dataset = Dataset(
+                    name=parsed_params.name,
+                    file_path=folder_path,
+                    for_prediction=parsed_params.for_predictions,
+                )
+            else:
+                new_dataset = Dataset(
+                    name=parsed_params.name,
+                    file_path=folder_path,
+                )
             db.add(new_dataset)
             db.commit()
             db.refresh(new_dataset)

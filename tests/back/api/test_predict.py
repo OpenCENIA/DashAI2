@@ -6,7 +6,10 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    get_dataset_info,
+)
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.dependencies.database.models import Experiment, Run
 from DashAI.back.dependencies.registry.component_registry import ComponentRegistry
@@ -35,7 +38,7 @@ class DummyModel(BaseModel):
         return joblib.load(filename)
 
     def predict(self, x: DashAIDataset):
-        return np.array([self.output] * x.num_rows)
+        return np.array([self.output] * x.shape[0])
 
     def fit(self, x: DashAIDataset, y: DashAIDataset):
         self.output = y[y.column_names[0]][0]

@@ -143,7 +143,7 @@ async def get_sample(
                 )
             dataset: DatasetDict = load_dataset(f"{file_path}/dataset")
             train_split: DashAIDataset = dataset["train"]
-            sample: dict = train_split.sample(n=1)
+            sample: dict = train_split.sample(n=10)
         except exc.SQLAlchemyError as e:
             logger.exception(e)
             raise HTTPException(

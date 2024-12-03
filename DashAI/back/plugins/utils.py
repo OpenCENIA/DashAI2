@@ -95,15 +95,20 @@ def get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
 def get_plugins_from_pypi() -> List[dict]:
     """
     Get all DashAI plugins from PyPI.
+    If the request to PyPI fails, an empty list is returned.
 
     Returns
     -------
     List[dict]
         A list with the information of all DashAI plugins, extracted from PyPI.
     """
+    try:
+        raw_plugins_names = _get_all_plugins()
+    except RuntimeError:
+        return []
     plugins_names = [
         plugin_name.lower()
-        for plugin_name in _get_all_plugins()
+        for plugin_name in raw_plugins_names
         if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
     return [get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]

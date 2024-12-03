@@ -1,6 +1,7 @@
 import logging
 from typing import List, Optional
 
+import pydantic_core
 from fastapi import APIRouter, Depends, Query, Response, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
@@ -156,10 +157,24 @@ async def refresh_plugins_record():
     List[Plugin]
         A list with the created plugins.
     """
-    plugins_params = [
-        PluginParams.model_validate(raw_plugin)
-        for raw_plugin in get_plugins_from_pypi()
-    ]
+    try:
+        plugins_params = [
+            PluginParams.model_validate(raw_plugin)
+            for raw_plugin in get_plugins_from_pypi()
+        ]
+    except pydantic_core.ValidationError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error validating plugin data",
+        ) from e
+    except RuntimeError as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error getting plugins from PyPI",
+        ) from e
+
     try:
         plugins = [add_plugin_to_db(param) for param in plugins_params]
         return plugins

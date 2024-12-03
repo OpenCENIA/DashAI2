@@ -22,6 +22,11 @@ def _get_all_plugins() -> List[str]:
     ----------
     List[str]
         A list with the names of all PyPI packages
+
+    Raises
+    ----------
+    RuntimeError
+        If the request to PyPI fails
     """
 
     # Define the URL for PyPI Simple API
@@ -40,7 +45,9 @@ def _get_all_plugins() -> List[str]:
         packages = [project["name"] for project in projects]
 
     else:
-        print(f"Failed to retrieve packages. Status code: {response.status_code}")
+        raise RuntimeError(
+            f"Failed to get all plugins from PyPI. Response code: {response.status_code}"
+        )
 
     return packages
 

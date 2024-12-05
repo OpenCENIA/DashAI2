@@ -43,7 +43,7 @@ export default function ExplainersDashboard() {
 
   const explainerConfig = {
     runId: id,
-    taskName: taskName
+    taskName: taskName,
   };
 
   const ExplainersTable = ({ scope, handleNewExplainer, description }) => {

@@ -69,7 +69,7 @@ function TrainedModelsTable() {
               navigate(`/app/explainers/runs/${params.row.id}`, {
                 state: {
                   modelName: params.row.name,
-                  taskName: params.row.taskName
+                  taskName: params.row.taskName,
                 },
               })
             }

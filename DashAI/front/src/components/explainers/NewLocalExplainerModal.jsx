@@ -63,7 +63,7 @@ export default function NewLocalExplainerModal({
 
   const { enqueueSnackbar } = useSnackbar();
 
-  const { runId } = explainerConfig;
+  const { runId, taskName } = explainerConfig;
 
   const defaultNewLocalExpl = {
     name: "",
@@ -257,6 +257,7 @@ export default function NewLocalExplainerModal({
             setNewExpl={setNewLocalExpl}
             setNextEnabled={setNextEnabled}
             scope={"Local"}
+            taskName={taskName}
           />
         )}
         {activeStep === 1 && (

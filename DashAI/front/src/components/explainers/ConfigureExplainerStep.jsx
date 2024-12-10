@@ -17,7 +17,7 @@ function ConfigureExplainerStep({
   setNewExpl,
   setNextEnabled,
   formSubmitRef,
-  scope
+  scope,
 }) {
   const { defaultValues } = useSchema({ modelName: newExpl.explainer_name });
   const [error, setError] = useState(false);
@@ -25,26 +25,29 @@ function ConfigureExplainerStep({
   const isParamsEmpty =
     !newExpl.parameters || Object.keys(newExpl.parameters).length === 0;
 
-  
   function filterFitParameters(explainer) {
-    const prefix = "fit_parameter_"
+    const prefix = "fit_parameter_";
     return Object.keys(explainer).reduce(
       (result, key) => {
-          if (key.startsWith(prefix)) {
-              result.fitParameters[key.slice(prefix.length)] = explainer[key];
-          } else {
-              result.parameters[key] = explainer[key];
-          }
-          return result;
+        if (key.startsWith(prefix)) {
+          result.fitParameters[key.slice(prefix.length)] = explainer[key];
+        } else {
+          result.parameters[key] = explainer[key];
+        }
+        return result;
       },
-      { parameters: {}, fitParameters: {} } 
+      { parameters: {}, fitParameters: {} },
     );
   }
 
   const handleUpdateParameters = (values) => {
     if (scope === "Local") {
       const { parameters, fitParameters } = filterFitParameters(values);
-      setNewExpl((_) => ({ ...newExpl, parameters: parameters, fit_parameters: fitParameters }));
+      setNewExpl((_) => ({
+        ...newExpl,
+        parameters: parameters,
+        fit_parameters: fitParameters,
+      }));
     } else {
       setNewExpl((_) => ({ ...newExpl, parameters: values }));
     }
@@ -53,8 +56,13 @@ function ConfigureExplainerStep({
   useEffect(() => {
     if (isParamsEmpty && Boolean(defaultValues)) {
       if (scope === "Local") {
-        const { parameters, fitParameters } = filterFitParameters(defaultValues);
-        setNewExpl((_) => ({ ...newExpl, parameters: parameters, fit_parameters: fitParameters }));
+        const { parameters, fitParameters } =
+          filterFitParameters(defaultValues);
+        setNewExpl((_) => ({
+          ...newExpl,
+          parameters: parameters,
+          fit_parameters: fitParameters,
+        }));
       } else {
         setNewExpl((_) => ({ ...newExpl, parameters: defaultValues }));
       }

@@ -24,7 +24,6 @@ import { createLocalExplainer as createLocalExplainerRequest } from "../../api/e
 import { enqueueExplainerJob as enqueueExplainerJobRequest } from "../../api/job";
 import { startJobQueue as startJobQueueRequest } from "../../api/job";
 
-import ConfigureExplainerFitStep from "./ConfigureExplainerFitStep";
 import ConfigureExplainerStep from "./ConfigureExplainerStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import SetNameAndExplainerStep from "./SetNameAndExplainerStep";
@@ -38,10 +37,6 @@ const steps = [
   { name: "selectExplainer", label: "Set name and explainer" },
   { name: "SelectDataset", label: "Select dataset" },
   { name: "ConfigureExplainer", label: "Configure explainer parameters" },
-  {
-    name: "ConfigureExplainerFit",
-    label: "Configure explainer fit parameters",
-  },
 ];
 
 /**
@@ -59,7 +54,6 @@ export default function NewLocalExplainerModal({
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
   const formSubmitRef = useRef(null);
-  const formSubmitRef2 = useRef(null);
 
   const { enqueueSnackbar } = useSnackbar();
 
@@ -273,15 +267,6 @@ export default function NewLocalExplainerModal({
             setNewExpl={setNewLocalExpl}
             setNextEnabled={setNextEnabled}
             formSubmitRef={formSubmitRef}
-            scope={"Local"}
-          />
-        )}
-        {activeStep === 3 && (
-          <ConfigureExplainerFitStep
-            newExpl={newLocalExpl}
-            setNewExpl={setNewLocalExpl}
-            setNextEnabled={setNextEnabled}
-            formSubmitRef={formSubmitRef2}
             scope={"Local"}
           />
         )}

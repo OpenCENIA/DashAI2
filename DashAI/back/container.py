@@ -13,7 +13,6 @@ from DashAI.back.dependencies.database import setup_sqlite_db
 from DashAI.back.dependencies.job_queues import SimpleJobQueue
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.explainability import (
-    FitKernelShap,
     KernelShap,
     PartialDependence,
     PermutationFeatureImportance,
@@ -86,8 +85,6 @@ INITIAL_COMPONENTS = [
     KernelShap,
     PartialDependence,
     PermutationFeatureImportance,
-    # Explainers Fit Schema
-    FitKernelShap,
 ]
 
 

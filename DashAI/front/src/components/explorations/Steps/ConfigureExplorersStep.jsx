@@ -187,7 +187,7 @@ function ConfigureExplorersStep({ onValidation = () => {} }) {
       };
     });
 
-    return options;
+    return options.sort((a, b) => a.label.localeCompare(b.label));
   }, []);
 
   const getAvailableExplorers = () => {

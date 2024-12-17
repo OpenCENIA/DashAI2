@@ -78,7 +78,7 @@ const getDataFromOrientation = (data, orientation) => {
         headerName: "Index",
         renderCell: (params) => {
           return (
-            <Tooltip title={params.value} arrow followCursor>
+            <Tooltip title={params.value} arrow>
               <Typography variant="body2">{params.value}</Typography>
             </Tooltip>
           );
@@ -94,7 +94,7 @@ const getDataFromOrientation = (data, orientation) => {
             } else if (typeof params.value === "object") {
               const tooltip = JSON.stringify(params.value);
               return (
-                <Tooltip title={tooltip} arrow followCursor>
+                <Tooltip title={tooltip} arrow>
                   <Typography variant="body2" color="text.secondary">
                     {JSON.stringify(params.value)}
                   </Typography>
@@ -115,7 +115,7 @@ const getDataFromOrientation = (data, orientation) => {
             }
             const tooltip = params.value;
             return (
-              <Tooltip title={tooltip} arrow followCursor>
+              <Tooltip title={tooltip} arrow>
                 <Typography variant="body2">{params.value}</Typography>
               </Tooltip>
             );

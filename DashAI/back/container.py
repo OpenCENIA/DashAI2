@@ -20,6 +20,8 @@ from DashAI.back.explainability import (
 )
 from DashAI.back.exploration import (
     BoxPlotExplorer,
+    CorrelationMatrixExplorer,
+    CovarianceMatrixExplorer,
     DescribeExplorer,
     MultiColumnBoxPlotExplorer,
     RowExplorer,
@@ -101,6 +103,8 @@ INITIAL_COMPONENTS = [
     RowExplorer,
     BoxPlotExplorer,
     MultiColumnBoxPlotExplorer,
+    CorrelationMatrixExplorer,
+    CovarianceMatrixExplorer,
 ]
 
 

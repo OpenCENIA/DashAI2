@@ -113,14 +113,9 @@ class DescribeExplorer(BaseExplorer):
     def launch_exploration(
         self, dataset: DashAIDataset, __explorer_info__: Explorer
     ) -> pd.DataFrame:
-        _df = dataset.to_pandas()
-
-        percentiles = self.percentiles
-        include = self.include
-        exclude = self.exclude
-
-        result = _df.describe(percentiles=percentiles, include=include, exclude=exclude)
-        return result
+        return dataset.to_pandas().describe(
+            percentiles=self.percentiles, include=self.include, exclude=self.exclude
+        )
 
     def save_exploration(
         self,

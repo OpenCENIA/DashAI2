@@ -15,15 +15,20 @@ import {
 } from "../../api/job";
 import { getRunStatus } from "../../utils/runStatus";
 
-const PredictForm = ({ run_id, id }) => {
+const PredictForm = ({
+  run_id,
+  id,
+  json_filename,
+  onClose,
+  updatePredictions,
+}) => {
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(false);
-  const [predictions, setPredictions] = useState(null);
-  const intervalRef = useRef(null);
 
-  const enqueuePredictionJob = async (run_id, id) => {
+  const enqueuePredictionJob = async (run_id, id, json_filename) => {
     try {
-      await enqueuePredictionRequest(run_id, id);
+      await enqueuePredictionRequest(run_id, id, json_filename);
+      onClose();
       return false;
     } catch (error) {
       enqueueSnackbar(
@@ -44,6 +49,7 @@ const PredictForm = ({ run_id, id }) => {
   const startJobQueue = async () => {
     try {
       await startJobQueueRequest();
+      updatePredictions();
     } catch (error) {
       console.error("Error starting job queue:", error);
       enqueueSnackbar("Error starting job queue", { variant: "error" });
@@ -53,7 +59,7 @@ const PredictForm = ({ run_id, id }) => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const error = await enqueuePredictionJob(run_id, id);
+      const error = await enqueuePredictionJob(run_id, id, json_filename);
       if (!error) {
         enqueueSnackbar("Prediction job enqueued successfully", {
           variant: "success",
@@ -61,6 +67,12 @@ const PredictForm = ({ run_id, id }) => {
         await startJobQueue();
       }
     } catch (err) {
+      if (statusCode == 400) {
+        enqueueSnackbar("Invalid dataest ", { variant: "error" });
+      }
+      const statusCode = err.response?.status;
+      const errorMessage = err.response?.data?.detail;
+
       console.error("Error:", err);
       enqueueSnackbar("Error submitting prediction job", { variant: "error" });
     } finally {
@@ -68,17 +80,17 @@ const PredictForm = ({ run_id, id }) => {
     }
   };
 
+  const didRun = useRef(false); // Ref to track if the effect has already been run
+
   useEffect(() => {
-    if (run_id && id) {
+    if (run_id && id && !didRun.current) {
+      didRun.current = true; // Set to true to prevent re-running
       handleSubmit();
+      updatePredictions();
     }
-  }, [run_id, id]);
-  return (
-    <div>
-      {loading && <p>Loading...</p>}
-      {/* Add any other UI elements you need */}
-    </div>
-  );
+  });
+
+  return <div>{loading && <p>Loading...</p>}</div>;
 };
 
 export default PredictForm;

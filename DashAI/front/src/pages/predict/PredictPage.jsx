@@ -18,9 +18,6 @@ function PredictPage() {
         handleNewPredict={() => setHandleNewPredict(true)}
       />
 
-      {/* Prediction form */}
-      {/* PredictModal */}
-
       <PredictModal
         open={handleNewPredict}
         onClose={() => setHandleNewPredict(false)}

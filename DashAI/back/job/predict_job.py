@@ -53,6 +53,7 @@ class PredictJob(BaseJob):
         run_id: int = self.kwargs["run_id"]
         id: int = self.kwargs["id"]
         db: Session = self.kwargs["db"]
+        json_filename: str = self.kwargs["json_filename"]
         try:
             run: Run = db.get(Run, run_id)
             if not run:
@@ -89,66 +90,62 @@ class PredictJob(BaseJob):
             ) from e
         try:
             model = component_registry[run.model_name]["class"]
+            trained_model: BaseModel = model.load(run.run_path)
         except Exception as e:
             log.exception(e)
             raise JobError(f"Model {run.model_name} not found in the registry") from e
 
         try:
-            trained_model: BaseModel = model.load(run.run_path)
             y_pred_proba = np.array(
                 trained_model.predict(loaded_dataset.select_columns(exp.input_columns))
             )
             y_pred = np.argmax(y_pred_proba, axis=1)
+
+        except ValueError as ve:
+            log.error(f"Validation Error: {ve}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid columns selected: {str(ve)}",
+            )
         except Exception as e:
-            log.exception(e)
+            log.error(e)
             raise JobError(
                 "Model prediction failed",
             ) from e
-        try:
-            new_dataset_name = f"{dataset.name}_pred"
-            existing_dataset = (
-                db.query(Dataset).filter_by(name=new_dataset_name).first()
-            )
-            if existing_dataset:
-                log.info(
-                    f"Dataset {new_dataset_name} already exists. Skipping creation."
-                )
-                return [existing_dataset]
 
-            new_dataset: DashAIDataset = loaded_dataset.add_column("prediction", y_pred)
-            path = str(Path(f"{config['DATASETS_PATH']}/{new_dataset_name}/"))
-            new_dataset.save_to_disk(os.path.join(path, "dataset/train/"))
+        try:
+            path = str(Path(f"{config['DATASETS_PATH']}/predictions/"))
+            # Obtener el mayor ID de los archivos existentes
+            existing_files = os.listdir(path)
+            existing_ids = []
+            for f in existing_files:
+                if f.endswith(".json"):
+                    file_path = os.path.join(path, f)
+                    with open(file_path, "r") as json_file:
+                        data = json.load(json_file)
+                        existing_ids.append(data["metadata"]["id"])
+            next_id = max(existing_ids, default=0) + 1
+
+            json_name = f"{json_filename}.json"
+
+            json_data = {
+                "metadata": {
+                    "id": next_id,
+                    "pred_name": json_name,
+                    "run_name": run.model_name,
+                    "model_name": run.name,
+                    "dataset_name": dataset.name,
+                    "task_name": exp.task_name,
+                },
+                "prediction": y_pred.tolist(),
+            }
+
+            os.makedirs(path, exist_ok=True)
+
+            with open(os.path.join(path, json_name), "w") as json_file:
+                json.dump(json_data, json_file, indent=4)
         except Exception as e:
             log.exception(e)
-            raise JobError("Can not save the prediction dataset") from e
-
-        new_dataset = Dataset(
-            name=new_dataset_name,
-            for_prediction=True,
-            prediction_status=True,
-            model_name=run.name,
-            last_modified=datetime.now(),
-            file_path=path,
-        )
-
-        # Save the 'dataset_dict.json' file to indicate that the only split is 'train'
-        with open(
-            os.path.join(f"{new_dataset.file_path}/dataset/", "dataset_dict.json"),
-            "w",
-            encoding="utf-8",
-        ) as datasetdict_info_file:
-            print("Saving dataset_dict.json")
-            json.dump(
-                {"splits": ["train"]},
-                datasetdict_info_file,
-                indent=2,
-                sort_keys=True,
-                ensure_ascii=False,
-            )
-        try:
-            db.add(new_dataset)
-            db.commit()
-            db.refresh(new_dataset)
-        except exc.SQLAlchemyError as e:
-            log.exception(e)
-            raise JobError("Connection with the database failed") from e
+            raise JobError(
+                "Can not save prediction to json file",
+            ) from e

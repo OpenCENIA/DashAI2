@@ -1,85 +1,3 @@
-/*
-import React, { useState, useEffect } from "react";
-import PropTypes from "prop-types";
-import {
-  Alert,
-  AlertTitle,
-  Grid,
-  Paper,
-  Typography,
-  Button,
-} from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
-import { useSnackbar } from "notistack";
-import { getDatasets as getDatasetsRequest } from "../../api/datasets";
-import { formatDate } from "../../utils";
-
-const columns = [
-  {
-    field: "name",
-    headerName: "Name",
-    minWidth: 250,
-    editable: false,
-  },
-  {
-    field: "created",
-    headerName: "Created",
-    minWidth: 200,
-    type: Date,
-    valueFormatter: (params) => formatDate(params.value),
-    editable: false,
-  },
-];
-
-function SelectDatasetStep({ selectedDatasetId, setSelectedDatasetId, setNextEnabled }) {
-  const [datasets, setDatasets] = useState([]);
-  const { enqueueSnackbar } = useSnackbar();
-
-  useEffect(() => {
-    async function fetchDatasets() {
-      try {
-        const response = await getDatasetsRequest();
-        setDatasets(response.data);
-      } catch (error) {
-        enqueueSnackbar("Failed to fetch datasets", { variant: "error" });
-      }
-    }
-
-    fetchDatasets();
-  }, [enqueueSnackbar]);
-
-  const handleRowClick = (params) => {
-    setSelectedDatasetId(params.id);
-    setNextEnabled(true);
-  };
-
-  return (
-    <Paper sx={{ height: 400, width: '100%' }}>
-      <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
-        Select a Dataset
-      </Typography>
-      <DataGrid
-        rows={datasets}
-        columns={columns}
-        pageSize={5}
-        rowsPerPageOptions={[5]}
-        onRowClick={handleRowClick}
-        getRowId={(row) => row.id}
-      />
-    </Paper>
-  );
-}
-
-SelectDatasetStep.propTypes = {
-  selectedDatasetId: PropTypes.string,
-  setSelectedDatasetId: PropTypes.func.isRequired,
-  setNextEnabled: PropTypes.func.isRequired,
-};
-
-export default SelectDatasetStep;
-
-*/
-
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 
@@ -96,6 +14,8 @@ import { useSnackbar } from "notistack";
 import { Link as RouterLink } from "react-router-dom";
 
 import { getDatasets as getDatasetsRequest } from "../../api/datasets";
+
+import { filter_datasets as filterDatasetsRequest } from "../../api/predict";
 import { formatDate } from "../../utils";
 
 const columns = [
@@ -124,9 +44,9 @@ const columns = [
 ];
 
 function SelectDatasetStep({
-  selectedDatasetId,
   setSelectedDatasetId,
   setNextEnabled,
+  trainDataset,
 }) {
   const { enqueueSnackbar } = useSnackbar();
 
@@ -134,6 +54,7 @@ function SelectDatasetStep({
   const [loading, setLoading] = useState(true);
   const [datasetsSelected, setDatasetsSelected] = useState([]);
   const [requestError, setRequestError] = useState(false);
+  const [datasetPaths, setDatasetPaths] = useState([]);
 
   const getDatasets = async () => {
     setLoading(true);
@@ -143,7 +64,16 @@ function SelectDatasetStep({
         (dataset) =>
           dataset.for_prediction == true && dataset.prediction_status == false,
       );
-      setDatasets(datasets);
+      const paths = datasets.map((dataset) => dataset.file_path);
+      setDatasetPaths(paths);
+
+      const requestData = {
+        train_dataset_id: Number(trainDataset),
+        datasets: paths,
+      };
+
+      const filteredDatasets = await filterDatasetsRequest(requestData);
+      setDatasets(filteredDatasets);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the datasets list.");
       setRequestError(true);
@@ -159,7 +89,7 @@ function SelectDatasetStep({
       setLoading(false);
     }
   };
-  // fetch datasets when the component is mounting
+
   useEffect(() => {
     getDatasets();
   }, []);
@@ -176,7 +106,6 @@ function SelectDatasetStep({
 
   return (
     <React.Fragment>
-      {/* Title and new datasets button */}
       <Grid
         container
         direction="row"
@@ -188,8 +117,6 @@ function SelectDatasetStep({
           Select a dataset for the selected task
         </Typography>
       </Grid>
-
-      {/* Datasets Table */}
 
       {datasets.length === 0 && !loading && !requestError && (
         <React.Fragment>
@@ -231,26 +158,10 @@ function SelectDatasetStep({
 }
 
 SelectDatasetStep.propTypes = {
-  newExp: PropTypes.shape({
-    id: PropTypes.string,
-    name: PropTypes.string,
-    dataset: PropTypes.object,
-    task_name: PropTypes.string,
-    input_columns: PropTypes.arrayOf(PropTypes.number),
-    output_columns: PropTypes.arrayOf(PropTypes.number),
-    splits: PropTypes.shape({
-      has_changed: PropTypes.bool,
-      is_random: PropTypes.bool,
-      training: PropTypes.number,
-      validation: PropTypes.number,
-      testing: PropTypes.number,
-    }),
-    step: PropTypes.string,
-    created: PropTypes.instanceOf(Date),
-    last_modified: PropTypes.instanceOf(Date),
-    runs: PropTypes.array,
-  }),
-  setNewExp: PropTypes.func.isRequired,
+  setSelectedDatasetId: PropTypes.func.isRequired,
   setNextEnabled: PropTypes.func.isRequired,
+  trainDataset: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+    .isRequired,
 };
+
 export default SelectDatasetStep;

@@ -3,88 +3,36 @@ import { DataGrid, GridActionsCellItem, GridToolbar } from "@mui/x-data-grid";
 import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { Button, Grid, Paper, Typography } from "@mui/material";
-import { get_prediction_tab } from "../../api/predict";
+import {
+  get_prediction_tab,
+  get_prediction_json,
+  delete_prediction as deletePredictionRequest,
+} from "../../api/predict";
 import { formatDate } from "../../utils";
 import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
 import DatasetSummaryModal from "../datasets/DatasetSummaryModal";
+import DeleteItemModal from "../custom/DeleteItemModal";
+import EditPredictionModal from "./EditPredictionModal";
 
 function PredictionTable({
   handleNewPredict,
   updateTableFlag,
   setUpdateTableFlag,
 }) {
-  const navigate = useNavigate();
   const { enqueueSnackbar } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [models, setModels] = useState([]);
 
-  const columns = React.useMemo(() => [
-    {
-      field: "id",
-      headerName: "ID",
-      minWidth: 30,
-      editable: false,
-    },
-    {
-      field: "dataset_name",
-      headerName: "Dataset Name",
-      minWidth: 200,
-      editable: false,
-    },
-    {
-      field: "model_name",
-      headerName: "Model Name",
-      minWidth: 200,
-      editable: false,
-    },
-    {
-      field: "run_name",
-      headerName: "Model",
-      minWidth: 170,
-      editable: false,
-    },
-
-    {
-      field: "task_name",
-      headerName: "Task",
-      minWidth: 200,
-      editable: false,
-    },
-    {
-      field: "last_modified",
-      headerName: "Created",
-      minWidth: 170,
-      editable: false,
-      type: Date,
-      valueFormatter: (params) => formatDate(params.value),
-    },
-
-    {
-      field: "actions",
-      type: "actions",
-      minWidth: 30,
-      getActions: (params) => [
-        <DatasetSummaryModal
-          key="dataset-summary-component"
-          datasetId={params.id}
-        />,
-      ],
-    },
-  ]);
-  const tabla = "PredictionTable";
-  const getModels = async (table) => {
+  const getModels = async () => {
     setLoading(true);
     try {
-      const models = await get_prediction_tab(table);
-      const uniqueModels = Array.from(
-        new Set(models.map((model) => model.id)),
-      ).map((id) => models.find((model) => model.id === id));
+      const uniqueModels = await get_prediction_json();
       setModels(uniqueModels);
     } catch (error) {
-      enqueueSnackbar("Error while trying to obtain the models table.");
+      enqueueSnackbar("Error while trying to delete the prediction");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -97,8 +45,35 @@ function PredictionTable({
     }
   };
 
+  const deletePrediction = async (predict_name) => {
+    try {
+      await deletePredictionRequest(predict_name);
+      setUpdateTableFlag(true);
+      enqueueSnackbar("Prediction successfully deleted.", {
+        variant: "success",
+      });
+    } catch (error) {
+      enqueueSnackbar("Error when trying to delete the prediction");
+      if (error.response) {
+        console.error("Response error:", error.message);
+      } else if (error.request) {
+        console.error("Request error", error.request);
+      } else {
+        console.error("Unknown Error", error.message);
+      }
+    }
+  };
+
+  const createDeleteHandler = React.useCallback(
+    (predict_name) => () => {
+      deletePrediction(predict_name);
+      setUpdateTableFlag(true);
+    },
+    [],
+  );
+
   useEffect(() => {
-    getModels(tabla);
+    getModels();
   }, []);
 
   // triggers an update of the table when updateFlag is set to true
@@ -108,6 +83,65 @@ function PredictionTable({
       getModels();
     }
   }, [updateTableFlag]);
+
+  const columns = React.useMemo(
+    () => [
+      {
+        field: "id",
+        headerName: "ID",
+        minWidth: 30,
+        editable: false,
+      },
+      {
+        field: "pred_name",
+        headerName: "Prediction Name",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "dataset_name",
+        headerName: "Dataset Name",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "model_name",
+        headerName: "Model Name",
+        minWidth: 200,
+        editable: false,
+      },
+      {
+        field: "run_name",
+        headerName: "Model",
+        minWidth: 150,
+        editable: false,
+      },
+
+      {
+        field: "task_name",
+        headerName: "Task",
+        minWidth: 150,
+        editable: false,
+      },
+      {
+        field: "actions",
+        type: "actions",
+        minWidth: 150,
+        getActions: (params) => [
+          <EditPredictionModal
+            key="edit-component"
+            predictName={params.row.pred_name}
+            updatePredictions={() => setUpdateTableFlag(true)}
+          />,
+          <DeleteItemModal
+            key="delete-component"
+            deleteFromTable={createDeleteHandler(params.row.pred_name)}
+          />,
+        ],
+      },
+    ],
+    [createDeleteHandler],
+  );
 
   return (
     <Paper sx={{ py: 4, px: 6 }}>
@@ -153,10 +187,11 @@ function PredictionTable({
         initialState={{
           pagination: {
             paginationModel: {
-              pageSize: 5,
+              columns: 5,
             },
           },
         }}
+        getRowId={(row) => row.id}
         pageSize={5}
         sortModel={[{ field: "id", sort: "asc" }]}
         pageSizeOptions={[5, 10]}

@@ -15,21 +15,15 @@ import {
   IconButton,
 } from "@mui/material";
 
+import PropTypes from "prop-types";
 import CloseIcon from "@mui/icons-material/Close";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { useSnackbar } from "notistack";
 import SelectModelStep from "./SelectModelStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import PredictForm from "./EnqueuePrediction";
 
-function PredictModal({
-  open,
-  onClose,
-  modelId,
-  datasetId,
-  updatePredictions,
-}) {
+function PredictModal({ open, onClose, updatePredictions }) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
@@ -37,6 +31,8 @@ function PredictModal({
   const [selectedModelId, setSelectedModelId] = useState(null);
   const [selectedDatasetId, setSelectedDatasetId] = useState(null);
   const [nextEnabled, setNextEnabled] = useState(false);
+  const [predictName, setPredictName] = useState("");
+  const [trainDataset, setTrainDataset] = useState(null);
 
   const steps = ["Select Model", "Select Dataset"];
 
@@ -63,24 +59,15 @@ function PredictModal({
       handleCloseDialog();
       return;
     }
-    /*
-  const handleNext = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep + 1);
-    setNextEnabled(false);
-  };
 
-  const handleBack = () => {
-    setActiveStep((prevActiveStep) => prevActiveStep - 1);
-    setNextEnabled(true);
-  };
-
-  const handleFinish = () => {
-    onClose();
-  };
-*/
     setActiveStep((prevStep) => prevStep + 1);
     setNextEnabled(false);
   };
+
+  const handlePredictNameInput = (name) => {
+    setPredictName(name);
+  };
+
   return (
     <Dialog
       open={open}
@@ -88,28 +75,13 @@ function PredictModal({
       fullWidth
       maxWidth={"lg"}
       onClose={handleCloseDialog}
-      aria-labelledby="new-experiment-dialog-title"
-      aria-describedby="new-experiment-dialog-description"
+      aria-labelledby="new-predict-dialog-title"
+      aria-describedby="new-predict-dialog-description"
       scroll="paper"
       PaperProps={{
         sx: { minHeight: "80vh" },
       }}
     >
-      {/*
-      <DialogTitle>
-        <Grid container justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Predict Page</Typography>
-          <Stepper activeStep={activeStep}>
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Grid>
-      </DialogTitle>
-*/}
-
       <DialogTitle>
         <Grid container direction={"row"} alignItems={"center"}>
           <Grid item xs={12} md={3}>
@@ -136,7 +108,7 @@ function PredictModal({
                   align={matches ? "center" : "left"}
                   sx={{ mb: { sm: 2, md: 0 } }}
                 >
-                  New predict
+                  Create a New Prediction
                 </Typography>
               </Grid>
             </Grid>
@@ -149,12 +121,12 @@ function PredictModal({
             >
               {steps.map((step, index) => (
                 <Step
-                  key={`${step.name}`}
+                  key={`${step}`}
                   completed={activeStep > index}
                   disabled={activeStep < index}
                 >
                   <StepButton color="inherit" onClick={handleStepButton(index)}>
-                    {step.label}
+                    {step}
                   </StepButton>
                 </Step>
               ))}
@@ -166,52 +138,29 @@ function PredictModal({
       <DialogContent dividers>
         {activeStep === 0 && (
           <SelectModelStep
-            selectedModelId={selectedModelId}
             setSelectedModelId={setSelectedModelId}
             setNextEnabled={setNextEnabled}
+            onPredictNameInput={handlePredictNameInput}
+            setTrainDataset={setTrainDataset}
           />
         )}
         {activeStep === 1 && (
           <SelectDatasetStep
-            selectedDatasetId={selectedDatasetId}
             setSelectedDatasetId={setSelectedDatasetId}
             setNextEnabled={setNextEnabled}
+            trainDataset={trainDataset}
           />
         )}
         {activeStep === 2 && (
-          <PredictForm run_id={selectedModelId} id={selectedDatasetId} />
+          <PredictForm
+            run_id={selectedModelId}
+            id={selectedDatasetId}
+            json_filename={predictName}
+            onClose={handleCloseDialog}
+            updatePredictions={updatePredictions}
+          />
         )}
       </DialogContent>
-      {/*
-      <Grid container justifyContent="flex-end" spacing={2} sx={{ p: 2 }}>
-        {activeStep > 0 && (
-          <Grid item>
-            <Button onClick={handleBack}>Back</Button>
-          </Grid>
-        )}
-        {activeStep < steps.length - 1 && (
-          <Grid item>
-            <Button
-              variant="contained"
-              onClick={handleNext}
-              disabled={!nextEnabled}
-            >
-              Next
-            </Button>
-          </Grid>
-        )}
-        {activeStep === steps.length - 1 && (
-          <Grid item>
-            <Button variant="contained" onClick={handleFinish}>
-              Finish
-            </Button>
-          </Grid>
-        )}
-      </Grid>
-    </Dialog>
-  );
-}
-*/}
 
       <DialogActions>
         <ButtonGroup size="large">
@@ -232,5 +181,11 @@ function PredictModal({
     </Dialog>
   );
 }
+
+PredictModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  updatePredictions: PropTypes.func.isRequired,
+};
 
 export default PredictModal;

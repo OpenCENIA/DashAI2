@@ -5,3 +5,8 @@ export interface IPredict {
   run_name: string;
   model_name: string;
 }
+
+export interface IParamsFilter {
+  train_dataset_id: number;
+  datasets: string[];
+}

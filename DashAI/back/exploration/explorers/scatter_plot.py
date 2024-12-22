@@ -1,11 +1,11 @@
 import os
 import pathlib
-import pickle
 
 import pathvalidate as pv
 import plotly.express as px
 from beartype.typing import Any, Dict, List
 from plotly.graph_objs import Figure
+from plotly.io import read_json
 
 from DashAI.back.core.schema_fields import (
     int_field,
@@ -149,9 +149,7 @@ class ScatterPlotExplorer(BaseExplorer):
             )
         path = pathlib.Path(os.path.join(save_path, filename))
 
-        with open(path, "wb") as f:
-            pickle.dump(result, f)
-
+        result.write_json(path.as_posix())
         return path.as_posix()
 
     def get_results(
@@ -160,10 +158,7 @@ class ScatterPlotExplorer(BaseExplorer):
         resultType = "plotly_json"
         config = {}
 
-        with open(exploration_path, "rb") as f:
-            result = pickle.load(f)
-
-        result: Figure = result
+        result = read_json(exploration_path)
         result = result.to_json()
 
         return {"data": result, "type": resultType, "config": config}

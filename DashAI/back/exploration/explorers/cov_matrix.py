@@ -80,7 +80,7 @@ class CovarianceMatrixExplorer(BaseExplorer):
         super().__init__(**kwargs)
 
     def launch_exploration(
-        self, dataset: DashAIDataset, __explorer_info__: Explorer
+        self, dataset: DashAIDataset, explorer_info: Explorer
     ) -> Union[pd.DataFrame, go.Figure]:
         result = dataset.to_pandas().cov(
             min_periods=self.min_periods,
@@ -89,9 +89,14 @@ class CovarianceMatrixExplorer(BaseExplorer):
         )
 
         if self.plot:
-            return px.imshow(
-                result, text_auto=True, aspect="auto", title="Covariance Matrix"
+            result = px.imshow(
+                result,
+                text_auto=True,
+                aspect="auto",
+                title=f"Covariance Matrix of {len(explorer_info.columns)} columns",
             )
+            if explorer_info.name is not None and explorer_info.name != "":
+                result.update_layout(title=f"{explorer_info.name}")
 
         return result
 

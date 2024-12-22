@@ -1,11 +1,11 @@
 import os
 import pathlib
-import pickle
 
 import pathvalidate as pv
 import plotly.express as px
 from beartype.typing import Any, Dict
 from plotly.graph_objs import Figure
+from plotly.io import read_json
 
 from DashAI.back.core.schema_fields import bool_field, enum_field, schema_field
 from DashAI.back.dataloaders.classes.dashai_dataset import (  # ClassLabel, Value,
@@ -92,17 +92,15 @@ class BoxPlotExplorer(BaseExplorer):
         result: Figure,
     ) -> str:
         if explorer_info.name is None or explorer_info.name == "":
-            filename = f"{explorer_info.id}.pickle"
+            filename = f"{explorer_info.id}.json"
         else:
             filename = (
                 f"{explorer_info.id}_"
-                f"{pv.sanitize_filename(explorer_info.name)}.pickle"
+                f"{pv.sanitize_filename(explorer_info.name)}.json"
             )
         path = pathlib.Path(os.path.join(save_path, filename))
 
-        with open(path, "wb") as f:
-            pickle.dump(result, f)
-
+        result.write_json(path.as_posix())
         return path.as_posix()
 
     def get_results(
@@ -111,10 +109,7 @@ class BoxPlotExplorer(BaseExplorer):
         resultType = "plotly_json"
         config = {}
 
-        with open(exploration_path, "rb") as f:
-            result = pickle.load(f)
-
-        result: Figure = result
+        result = read_json(exploration_path)
         result = result.to_json()
 
         return {"data": result, "type": resultType, "config": config}

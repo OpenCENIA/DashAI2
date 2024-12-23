@@ -53,6 +53,7 @@ function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
                 <Button
                   variant="contained"
                   onClick={async () => {
+                    setRefreshPluginsFlag(true);
                     try {
                       await updatePluginsFromPypi();
                     } catch (error) {
@@ -60,7 +61,6 @@ function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
                         variant: "error",
                       });
                     }
-                    setRefreshPluginsFlag(true);
                   }}
                   endIcon={<UpdateIcon />}
                 >
@@ -68,14 +68,13 @@ function PluginsTab({ refreshPluginsFlag, setRefreshPluginsFlag }) {
                 </Button>
               </Grid>
             </Grid>
-            {!loading && (
-              <PluginsContent
-                refreshPluginsFlag={refreshPluginsFlag}
-                setRefreshPluginsFlag={setRefreshPluginsFlag}
-                plugins={plugins}
-                pluginTags={pluginTags}
-              />
-            )}
+            <PluginsContent
+              refreshPluginsFlag={refreshPluginsFlag}
+              setRefreshPluginsFlag={setRefreshPluginsFlag}
+              plugins={plugins}
+              pluginTags={pluginTags}
+              loading={loading}
+            />
           </TabPanel>
         ))}
       </TabContext>

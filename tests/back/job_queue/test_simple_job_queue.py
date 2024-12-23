@@ -1,3 +1,5 @@
+from typing import Generator
+
 import pytest
 
 from DashAI.back.dependencies.job_queues import BaseJobQueue, SimpleJobQueue
@@ -14,7 +16,7 @@ class DummyJob(BaseJob):
 
 
 @pytest.fixture(name="job_queue")
-def fixture_job_queue() -> BaseJobQueue:
+def fixture_job_queue() -> Generator[BaseJobQueue]:
     queue = SimpleJobQueue()
     yield queue
     while not queue.is_empty():

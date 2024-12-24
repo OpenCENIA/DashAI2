@@ -42,14 +42,21 @@ async def get_prediction_json(config: dict = Depends(lambda: di["config"])):
     HTTPException
         If the directory or files cannot be accessed.
     """
-    # Construct the path to the predictions directory
-    path = str(Path(f"{config['DATASETS_PATH']}/predictions/"))
-    files = os.listdir(path)
+    path = Path(f"{config['DATASETS_PATH']}/predictions/")
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+        files = os.listdir(path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
     json_files = [f for f in files if f.endswith(".json")]
+    if not json_files:
+        return []
+
     prediction_data = []
     # Read and collect metadata from each JSON file
     for json_file in json_files:
-        file_path = os.path.join(path, json_file)
+        file_path = path / json_file
         with open(file_path, "r") as f:
             data = json.load(f)["metadata"]
             prediction_data.append(data)
@@ -82,21 +89,16 @@ async def get_prediction_tab(
     dict
         A dictionary containing the fetched data based on the table parameter.
     """
-    # buscar desde afuera para encontrar los json con info y lo mandas front
     with session_factory() as db:
         if table == "PredictionTable/":
-            query_results = (
-                db.query(
-                    Experiment.task_name,
-                    Run.model_name.label("run_type"),
-                    Dataset.name.label("dataset_name"),
-                    Dataset.id.label("dataset_id"),
-                    Dataset.model_name.label("dataset_model_name"),
-                    Dataset.last_modified,
-                )
-                .filter(Dataset.prediction_status)
-                .all()
-            )
+            query_results = db.query(
+                Experiment.task_name,
+                Run.model_name.label("run_type"),
+                Dataset.name.label("dataset_name"),
+                Dataset.id.label("dataset_id"),
+                Dataset.model_name.label("dataset_model_name"),
+                Dataset.last_modified,
+            ).all()
 
             if not query_results:
                 raise HTTPException(

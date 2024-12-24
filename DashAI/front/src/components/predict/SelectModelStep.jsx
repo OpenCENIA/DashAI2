@@ -127,7 +127,7 @@ function SelectModelStep({
     >
       <Grid item xs={12}>
         <Typography variant="subtitle1" component="h3" sx={{ mb: 3 }}>
-          Select a model and provide a prediction name to continue
+          Provide a prediction name to continue and select a model
         </Typography>
 
         <TextField

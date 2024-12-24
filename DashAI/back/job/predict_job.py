@@ -115,7 +115,6 @@ class PredictJob(BaseJob):
 
         try:
             path = str(Path(f"{config['DATASETS_PATH']}/predictions/"))
-            # Obtener el mayor ID de los archivos existentes
             existing_files = os.listdir(path)
             existing_ids = []
             for f in existing_files:

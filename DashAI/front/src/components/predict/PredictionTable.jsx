@@ -32,7 +32,7 @@ function PredictionTable({
       const uniqueModels = await get_prediction_json();
       setModels(uniqueModels);
     } catch (error) {
-      enqueueSnackbar("Error while trying to delete the prediction");
+      enqueueSnackbar("Error when trying to get the predictions");
       if (error.response) {
         console.error("Response error:", error.message);
       } else if (error.request) {
@@ -140,12 +140,11 @@ function PredictionTable({
         ],
       },
     ],
-    [createDeleteHandler],
+    [],
   );
 
   return (
     <Paper sx={{ py: 4, px: 6 }}>
-      {/* Title and new datasets button */}
       <Grid
         container
         direction="row"

@@ -581,12 +581,16 @@ def get_dataset_info(dataset_path: str) -> object:
     dataset = load_dataset(dataset_path=dataset_path)
     total_rows = sum(split.num_rows for split in dataset.values())
     total_columns = len(dataset["train"].features)
+    train_size = dataset.train.num_rows if hasattr(dataset, "train") else 0
+    test_size = dataset.test.num_rows if hasattr(dataset, "test") else 0
+    val_size = dataset.validation.num_rows if hasattr(dataset, "validation") else 0
+
     dataset_info = {
         "total_rows": total_rows,
         "total_columns": total_columns,
-        "train_size": dataset["train"].num_rows,
-        "test_size": dataset["test"].num_rows,
-        "val_size": dataset["validation"].num_rows,
+        "train_size": train_size,
+        "test_size": test_size,
+        "val_size": val_size,
     }
     return dataset_info
 

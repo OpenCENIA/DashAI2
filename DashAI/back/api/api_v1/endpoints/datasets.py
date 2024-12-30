@@ -286,8 +286,7 @@ async def upload_dataset(
         )
 
         new_dataset = to_dashai_dataset(new_dataset)
-
-        if not parsed_params.splits_in_folders:
+        if parsed_params.splits_in_folders:
             n = len(new_dataset["train"])
             train_indexes, test_indexes, val_indexes = split_indexes(
                 n,
@@ -303,7 +302,7 @@ async def upload_dataset(
                 test_indexes=test_indexes,
                 val_indexes=val_indexes,
             )
-            dataset_path = folder_path / "dataset"
+        dataset_path = folder_path / "dataset"
         logger.debug("Saving dataset in %s", str(dataset_path))
         save_dataset(new_dataset, dataset_path)
 

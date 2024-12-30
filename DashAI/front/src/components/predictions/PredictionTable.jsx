@@ -4,18 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import { Button, Grid, Paper, Typography } from "@mui/material";
 import {
-  get_prediction_tab,
-  get_prediction_json,
+  get_metadata_prediction_json,
   delete_prediction as deletePredictionRequest,
 } from "../../api/predict";
-import { formatDate } from "../../utils";
 import {
   AddCircleOutline as AddIcon,
   Update as UpdateIcon,
 } from "@mui/icons-material";
-import DatasetSummaryModal from "../datasets/DatasetSummaryModal";
 import DeleteItemModal from "../custom/DeleteItemModal";
 import EditPredictionModal from "./EditPredictionModal";
+import PredictionSummaryModal from "./PredictionSummaryModal";
 
 function PredictionTable({
   handleNewPredict,
@@ -29,7 +27,8 @@ function PredictionTable({
   const getModels = async () => {
     setLoading(true);
     try {
-      const uniqueModels = await get_prediction_json();
+      const uniqueModels = await get_metadata_prediction_json();
+      console.log(uniqueModels);
       setModels(uniqueModels);
     } catch (error) {
       enqueueSnackbar("Error when trying to get the predictions");
@@ -116,7 +115,6 @@ function PredictionTable({
         minWidth: 150,
         editable: false,
       },
-
       {
         field: "task_name",
         headerName: "Task",
@@ -136,6 +134,10 @@ function PredictionTable({
           <DeleteItemModal
             key="delete-component"
             deleteFromTable={createDeleteHandler(params.row.pred_name)}
+          />,
+          <PredictionSummaryModal
+            key="summary-component"
+            predictName={params.row.pred_name}
           />,
         ],
       },

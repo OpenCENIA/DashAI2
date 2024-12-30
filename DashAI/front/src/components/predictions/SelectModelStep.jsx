@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 import { Grid, Paper, Typography, TextField } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useSnackbar } from "notistack";
-import { get_prediction_tab } from "../../api/predict";
+import { get_model_table } from "../../api/predict";
 import { formatDate } from "../../utils";
 
 function SelectModelStep({
@@ -68,11 +68,11 @@ function SelectModelStep({
     },
   ]);
 
-  const get_Models = async (table) => {
+  const get_Models = async () => {
     setLoading(true);
     setError(null);
     try {
-      const models = await get_prediction_tab(table);
+      const models = await get_model_table();
       setModels(models);
     } catch (error) {
       enqueueSnackbar("Error while trying to obtain the models table.");

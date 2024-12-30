@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import PredictForm from "./EnqueuePrediction";
-import PredictModal from "../../components/predict/PredictModal";
+import PredictionModal from "./PredictionModal";
 
 function PredictionHandler({ setUpdateTableFlag }) {
   const [handleNewPredict, setHandleNewPredict] = useState(false);
 
   return (
-    <PredictModal
+    <PredictionModal
       open={handleNewPredict}
       onClose={() => setHandleNewPredict(false)}
       updatePredictions={() => setUpdateTableFlag(true)}

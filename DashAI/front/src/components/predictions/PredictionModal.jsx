@@ -23,7 +23,7 @@ import SelectModelStep from "./SelectModelStep";
 import SelectDatasetStep from "./SelectDatasetStep";
 import PredictForm from "./EnqueuePrediction";
 
-function PredictModal({ open, onClose, updatePredictions }) {
+function PredictionModal({ open, onClose, updatePredictions }) {
   const theme = useTheme();
   const matches = useMediaQuery(theme.breakpoints.down("md"));
   const screenSm = useMediaQuery(theme.breakpoints.down("sm"));
@@ -182,10 +182,10 @@ function PredictModal({ open, onClose, updatePredictions }) {
   );
 }
 
-PredictModal.propTypes = {
+PredictionModal.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
   updatePredictions: PropTypes.func.isRequired,
 };
 
-export default PredictModal;
+export default PredictionModal;

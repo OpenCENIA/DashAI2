@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/json/")
+@router.get("/metadata_json/")
 @inject
-async def get_prediction_json(config: dict = Depends(lambda: di["config"])):
+async def get_metadata_prediction_json(config: dict = Depends(lambda: di["config"])):
     """
     Fetches prediction metadata from JSON files.
 
@@ -63,98 +63,119 @@ async def get_prediction_json(config: dict = Depends(lambda: di["config"])):
     return prediction_data
 
 
-@router.get("/")
+@router.get("/prediciton_table")
 @inject
-async def get_prediction_tab(
-    table: str,
+async def get_prediction_table(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """
-    Fetches data based on the specified table parameter.
+    Fetches a table of prediction metadata from the database.
 
     Parameters
     ----------
-    table : str
-        A parameter that determines the type of data to fetch.
-        - If 'PredictionTable', returns prediction-related data.
-        - If 'SelectModelStep', returns model selection-related data.
+    session_factory : sessionmaker
+        SQLAlchemy session factory injected automatically.
+
+    Returns
+    -------
+    List[dict]
+        A list of dictionaries containing prediction metadata.
 
     Raises
     ------
     HTTPException
-        "No data found" if no data is found.
+        If no data is found.
+    """
+
+    with session_factory() as db:
+        query_results = db.query(
+            Experiment.task_name,
+            Run.model_name.label("run_type"),
+            Dataset.name.label("dataset_name"),
+            Dataset.id.label("dataset_id"),
+            Dataset.model_name.label("dataset_model_name"),
+            Dataset.last_modified,
+        ).all()
+
+        if not query_results:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No data found",
+            )
+
+        prediction_data = [
+            {
+                "id": result.dataset_id,
+                "last_modified": result.last_modified,
+                "run_name": result.run_type,
+                "model_name": result.dataset_model_name,
+                "dataset_name": result.dataset_name,
+                "task_name": result.task_name,
+            }
+            for result in query_results
+        ]
+        return prediction_data
+
+
+@router.get("/model_table")
+@inject
+async def get_model_table(
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+):
+    """
+    Fetches a table of model metadata from the database.
+
+    Parameters
+    ----------
+    session_factory : sessionmaker
+        SQLAlchemy session factory injected automatically.
 
     Returns
     -------
-    dict
-        A dictionary containing the fetched data based on the table parameter.
+    List[dict]
+        A list of dictionaries containing model metadata.
+
+    Raises
+    ------
+    HTTPException
+        If no data is found.
     """
     with session_factory() as db:
-        if table == "PredictionTable/":
-            query_results = db.query(
+        query_results = (
+            db.query(
+                Experiment.id.label("experiment_id"),
+                Experiment.name.label("experiment_name"),
+                Experiment.created,
                 Experiment.task_name,
-                Run.model_name.label("run_type"),
+                Run.name.label("run_name"),
+                Run.model_name,
                 Dataset.name.label("dataset_name"),
                 Dataset.id.label("dataset_id"),
-                Dataset.model_name.label("dataset_model_name"),
-                Dataset.last_modified,
-            ).all()
-
-            if not query_results:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No data found",
-                )
-
-            prediction_data = [
-                {
-                    "id": result.dataset_id,
-                    "last_modified": result.last_modified,
-                    "run_name": result.run_type,
-                    "model_name": result.dataset_model_name,
-                    "dataset_name": result.dataset_name,
-                    "task_name": result.task_name,
-                }
-                for result in query_results
-            ]
-            return prediction_data
-
-        elif table == "SelectModelStep/":
-            query_results = (
-                db.query(
-                    Experiment.id.label("experiment_id"),
-                    Experiment.name.label("experiment_name"),
-                    Experiment.created,
-                    Experiment.task_name,
-                    Run.name.label("run_name"),
-                    Run.model_name,
-                    Dataset.name.label("dataset_name"),
-                    Dataset.id.label("dataset_id"),
-                )
-                .join(Experiment, Experiment.id == Run.experiment_id)
-                .join(Dataset, Experiment.dataset_id == Dataset.id)
-                .all()
             )
-            if not query_results:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No data found",
-                )
+            .join(Experiment, Experiment.id == Run.experiment_id)
+            .join(Dataset, Experiment.dataset_id == Dataset.id)
+            .all()
+        )
+        if not query_results:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No data found",
+            )
 
-            prediction_data = [
-                {
-                    "id": result.experiment_id,
-                    "experiment_name": result.experiment_name,
-                    "created": result.created,
-                    "run_name": result.run_name,
-                    "task_name": result.task_name,
-                    "model_name": result.model_name,
-                    "dataset_name": result.dataset_name,
-                    "dataset_id": result.dataset_id,
-                }
-                for result in query_results
-            ]
-            return prediction_data
+        prediction_data = [
+            {
+                "id": result.experiment_id,
+                "experiment_name": result.experiment_name,
+                "created": result.created,
+                "run_name": result.run_name,
+                "task_name": result.task_name,
+                "model_name": result.model_name,
+                "dataset_name": result.dataset_name,
+                "dataset_id": result.dataset_id,
+            }
+            for result in query_results
+        ]
+        return prediction_data
 
 
 @router.post("/filter_datasets")

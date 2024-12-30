@@ -4,13 +4,18 @@ import type { IDataset } from "../types/dataset";
 import { IParamsFilter } from "../types/predict";
 const predictEndpoint = "/v1/predict";
 
-export const get_prediction_tab = async (table: string): Promise<object> => {
-  const response = await api.get(`${predictEndpoint}/?table=${table}/`);
+export const get_prediction_table = async (): Promise<object> => {
+  const response = await api.get(`${predictEndpoint}/prediction_table/`);
   return response.data;
 };
 
-export const get_prediction_json = async (): Promise<object> => {
-  const response = await api.get(`${predictEndpoint}/json/`);
+export const get_model_table = async (): Promise<object> => {
+  const response = await api.get(`${predictEndpoint}/model_table/`);
+  return response.data;
+};
+
+export const get_metadata_prediction_json = async (): Promise<object> => {
+  const response = await api.get(`${predictEndpoint}/metadata_json/`);
   return response.data;
 };
 

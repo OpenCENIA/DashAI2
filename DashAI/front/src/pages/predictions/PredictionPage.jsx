@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import CustomLayout from "../../components/custom/CustomLayout";
-import PredictionTable from "../../components/predict/PredictionTable";
-import PredictModal from "../../components/predict/PredictModal";
-function PredictPage() {
+import PredictionTable from "../../components/predictions/PredictionTable";
+import PredictionModal from "../../components/predictions/PredictionModal";
+function PredictionPage() {
   const [updateTableFlag, setUpdateTableFlag] = useState(false);
   const [handleNewPredict, setHandleNewPredict] = useState(false);
 
@@ -18,7 +18,7 @@ function PredictPage() {
         handleNewPredict={() => setHandleNewPredict(true)}
       />
 
-      <PredictModal
+      <PredictionModal
         open={handleNewPredict}
         onClose={() => setHandleNewPredict(false)}
         updatePredictions={() => setUpdateTableFlag(true)}
@@ -27,4 +27,4 @@ function PredictPage() {
   );
 }
 
-export default PredictPage;
+export default PredictionPage;

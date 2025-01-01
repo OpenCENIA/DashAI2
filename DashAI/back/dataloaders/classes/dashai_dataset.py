@@ -630,3 +630,26 @@ def update_dataset_splits(
         test_indexes=test_indexes,
         val_indexes=val_indexes,
     )
+
+
+def concatenate_dataset_splits(datasetdict: DashAIDataset) -> DashAIDataset:
+    """Concatenate the dataset splits into a single dataset.
+
+    Parameters
+    ----------
+    datasetdict : DatasetDict
+        Dataset to concatenate.
+
+    Returns
+    -------
+    DatasetDict
+        The concatenated dataset.
+    """
+    dataset_splits_list = list(datasetdict.values())
+    concatenated_dataset = concatenate_datasets(dataset_splits_list)
+    separate_dataset_dict = DatasetDict(
+        {
+            "train": concatenated_dataset,
+        }
+    )
+    return to_dashai_dataset(separate_dataset_dict)

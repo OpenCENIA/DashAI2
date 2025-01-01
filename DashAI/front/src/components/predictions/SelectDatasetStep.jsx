@@ -59,10 +59,7 @@ function SelectDatasetStep({
   const getDatasets = async () => {
     setLoading(true);
     try {
-      const rawdata = await getDatasetsRequest();
-      const datasets = rawdata.filter(
-        (dataset) => dataset.for_prediction == true,
-      );
+      const datasets = await getDatasetsRequest();
       const paths = datasets.map((dataset) => dataset.file_path);
       setDatasetPaths(paths);
 

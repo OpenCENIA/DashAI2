@@ -51,11 +51,6 @@ class JSONDataloaderSchema(BaseSchema):
             "otherwise 'false'."
         ),
     )  # type: ignore
-    for_predictions: schema_field(
-        bool_field(),
-        False,
-        ("If the dataset is for predictions, select 'true', " "otherwise 'false'."),
-    )  # type: ignore
     splits: DatasetSplitsSchema
     more_options: DataloaderMoreOptionsSchema
 

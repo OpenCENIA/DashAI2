@@ -93,7 +93,7 @@ async def get_prediction_table(
             Run.model_name.label("run_type"),
             Dataset.name.label("dataset_name"),
             Dataset.id.label("dataset_id"),
-            Dataset.model_name.label("dataset_model_name"),
+            Run.name.label("model_name"),
             Dataset.last_modified,
         ).all()
 
@@ -108,7 +108,7 @@ async def get_prediction_table(
                 "id": result.dataset_id,
                 "last_modified": result.last_modified,
                 "run_name": result.run_type,
-                "model_name": result.dataset_model_name,
+                "model_name": result.model_name,
                 "dataset_name": result.dataset_name,
                 "task_name": result.task_name,
             }

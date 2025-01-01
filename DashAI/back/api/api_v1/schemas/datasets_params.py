@@ -21,7 +21,6 @@ class DatasetParams(BaseModel):
     dataloader: str
     name: str
     splits_in_folders: bool = False
-    is_for_predictions: bool = False
     splits: SplitParams
     more_options: MoreOptionsParams
 

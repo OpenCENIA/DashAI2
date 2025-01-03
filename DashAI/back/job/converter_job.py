@@ -5,12 +5,10 @@ from importlib import import_module
 from typing import Dict, List, Union
 
 import pandas as pd
-from datasets import (
-    Dataset,
-    DatasetDict,
-)
+from datasets import Dataset, DatasetDict
 from kink import inject
 from pydantic import BaseModel as PydanticBaseModel
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
@@ -19,12 +17,8 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     save_dataset,
     to_dashai_dataset,
 )
-from DashAI.back.dependencies.database.models import (
-    ConverterList,
-)
-from DashAI.back.dependencies.database.models import (
-    Dataset as DatasetModel,
-)
+from DashAI.back.dependencies.database.models import ConverterList
+from DashAI.back.dependencies.database.models import Dataset as DatasetModel
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.base_job import BaseJob, JobError
 
@@ -41,7 +35,22 @@ class ConverterListJob(BaseJob):
     """ConverterListJob class to modify a dataset by applying a sequence of converters."""
 
     def set_status_as_delivered(self) -> None:
-        return
+        """Set the status of the list as delivered."""
+        converter_list_id: int = self.kwargs["converter_list_id"]
+        db: Session = self.kwargs["db"]
+        converter_list: ConverterList = db.get(ConverterList, converter_list_id)
+        if converter_list is None:
+            raise JobError(
+                f"Converter list with id {converter_list_id} does not exist in DB."
+            )
+        try:
+            converter_list.set_status_as_delivered()
+            db.commit()
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise JobError(
+                "Error while setting the status of the converter list as delivered."
+            ) from e
 
     @inject
     def run(
@@ -71,13 +80,15 @@ class ConverterListJob(BaseJob):
                 raise JobError(f"Dataset with id {dataset_id} does not exist in DB.")
 
             dataset_path = f"{dataset.file_path}/dataset"
-            dataset_dict = load_dataset(dataset_path)
+            dataset_dict = load_dataset(dataset_path, keep_in_memory=True)
             if int(target_column_index) < 1 or int(target_column_index) > len(
                 dataset_dict["train"].features
             ):
                 raise JobError(
                     f"Target column index {target_column_index} is out of bounds."
                 )
+
+            converter_list.set_status_as_started()
 
             # Regex to convert camel case to snake case
             # Source: https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
@@ -217,12 +228,14 @@ class ConverterListJob(BaseJob):
                 )
                 dataset_dict = to_dashai_dataset(dataset_dict)
             # Override the dataset
-            save_dataset(dataset_dict, dataset_path)
+            save_dataset(dataset_dict, f"{dataset_path}")
+            converter_list.set_status_as_finished()
 
             db.commit()
             db.refresh(dataset)
 
         except Exception as e:
+            log.exception(e)
             raise JobError(
                 f"Error while retrieving dataset with id {dataset_id}. Error: {e}"
             )

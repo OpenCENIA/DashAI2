@@ -44,7 +44,8 @@ const ConverterTable = ({
   const updateOrder = (elementsToUpdate, orderOfTrigger, delta = 1) => {
     const updatedElements = elementsToUpdate.map((element, index) => ({
       ...element,
-      order: element.order > orderOfTrigger ? element.order - delta : element.order, // Update order of elements after the deleted one
+      order:
+        element.order > orderOfTrigger ? element.order - delta : element.order, // Update order of elements after the deleted one
     }));
     return updatedElements;
   };

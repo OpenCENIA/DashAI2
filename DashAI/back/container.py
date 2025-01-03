@@ -15,6 +15,7 @@ from DashAI.back.converters import (
     CountVectorizer,
     DictionaryLearning,
     DictVectorizer,
+    Embedding,
     FactorAnalysis,
     FastICA,
     FeatureHasher,
@@ -98,10 +99,7 @@ from DashAI.back.models import (
     RandomForestClassifier,
     ViTTransformer,
 )
-from DashAI.back.optimizers import (
-    HyperOptOptimizer,
-    OptunaOptimizer,
-)
+from DashAI.back.optimizers import HyperOptOptimizer, OptunaOptimizer
 from DashAI.back.tasks import (
     ImageClassificationTask,
     TabularClassificationTask,
@@ -193,6 +191,7 @@ INITIAL_COMPONENTS = [
     LinearDiscriminantAnalysis,
     QuadraticDiscriminantAnalysis,
     DictVectorizer,
+    Embedding,
     FeatureHasher,
     CountVectorizer,
     HashingVectorizer,

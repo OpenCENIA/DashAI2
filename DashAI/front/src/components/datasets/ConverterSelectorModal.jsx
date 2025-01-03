@@ -13,6 +13,7 @@ import { Help, AddCircleOutline as AddIcon } from "@mui/icons-material";
 import ItemSelectorWithInfo from "../custom/ItemSelectorWithInfo";
 
 import { getComponents as getComponentsRequest } from "../../api/component";
+import useSchema from "../../hooks/useSchema";
 import uuid from "react-uuid";
 import PropTypes from "prop-types";
 
@@ -23,6 +24,10 @@ const ConverterSelectorModal = ({ setConvertersToApply }) => {
   const [converters, setConverters] = useState([]);
 
   const [selectedConverter, setSelectedConverter] = useState({});
+
+  const { defaultValues: defaultParameters } = useSchema({
+    modelName: selectedConverter.name,
+  });
 
   const getListOfConverters = useCallback(async () => {
     setLoading(true);
@@ -62,7 +67,7 @@ const ConverterSelectorModal = ({ setConvertersToApply }) => {
         pipelineId: null,
         name: selectedConverter.name,
         schema: selectedConverter.schema,
-        params: {},
+        params: defaultParameters,
         scope: {
           columns: [],
           rows: [],

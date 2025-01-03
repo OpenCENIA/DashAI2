@@ -174,7 +174,7 @@ class DashAIDataset(Dataset):
 
 
 @beartype
-def load_dataset(dataset_path: str) -> DatasetDict:
+def load_dataset(dataset_path: str, keep_in_memory: bool | None = None) -> DatasetDict:
     """Load a DashAI dataset from its path.
 
          This process cast each split into a DashAIdataset object.
@@ -189,7 +189,7 @@ def load_dataset(dataset_path: str) -> DatasetDict:
     DatasetDict
         The loaded dataset.
     """
-    dataset = load_from_disk(dataset_path=dataset_path)
+    dataset = load_from_disk(dataset_path=dataset_path, keep_in_memory=keep_in_memory)
 
     for split in dataset:
         dataset[split] = DashAIDataset(dataset[split].data)

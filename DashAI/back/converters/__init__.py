@@ -100,3 +100,6 @@ from DashAI.back.converters.scikit_learn.locally_linear_embedding import (
 from DashAI.back.converters.scikit_learn.mds import MDS
 from DashAI.back.converters.scikit_learn.spectral_embedding import SpectralEmbedding
 from DashAI.back.converters.scikit_learn.tsne import TSNE
+
+# Hugging Face module
+from DashAI.back.converters.hugging_face.embedding import Embedding

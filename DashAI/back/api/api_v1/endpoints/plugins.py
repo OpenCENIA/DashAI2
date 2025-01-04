@@ -266,7 +266,8 @@ async def update_plugin(
                     uninstalled_components = uninstall_plugin(plugin_name)
                     raise HTTPException(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail="Some component of the plugins is already in the register",
+                        detail="Some component of the plugins is already"
+                        + "in the register",
                     )
                 # else the new components should be registered
                 else:

@@ -254,7 +254,23 @@ async def update_plugin(
                 )
             if params.new_status == PluginStatus.INSTALLED:
                 installed_components = install_plugin(plugin_name)
-                register_plugin_components(installed_components, component_registry)
+                # If some component contained in the installed components
+                # is in the component registry the installation should be aborted
+                class_names_installed_components = [
+                    component.__name__ for component in installed_components
+                ]
+                if any(
+                    component in component_registry
+                    for component in class_names_installed_components
+                ):
+                    uninstalled_components = uninstall_plugin(plugin_name)
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail="Some component of the plugins is already in the register",
+                    )
+                # else the new components should be registered
+                else:
+                    register_plugin_components(installed_components, component_registry)
             elif (
                 plugin.status == PluginStatus.INSTALLED
                 and params.new_status == PluginStatus.REGISTERED

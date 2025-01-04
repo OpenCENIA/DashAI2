@@ -61,6 +61,7 @@ class ConverterListJob(BaseJob):
         target_column_index: int = self.kwargs["target_column_index"]
         db: Session = self.kwargs["db"]
 
+        # Load the converter list information
         try:
             if converter_list_id is None or target_column_index is None:
                 raise JobError(
@@ -72,13 +73,27 @@ class ConverterListJob(BaseJob):
                 raise JobError(
                     f"Converter list with id {converter_list_id} does not exist in DB."
                 )
+            
+            converter_list.set_status_as_started()
+            db.commit()
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            raise JobError("Error while loading the converter list info.") from e
 
-            converters_to_apply: Dict[str, ConverterParams] = converter_list.converters
+        # Load dataset information
+        try:
             dataset_id = converter_list.dataset_id
             dataset: DatasetModel = db.get(DatasetModel, dataset_id)
             if not dataset:
                 raise JobError(f"Dataset with id {dataset_id} does not exist in DB.")
+        except exc.SQLAlchemyError as e:
+            log.exception(e)
+            converter_list.set_status_as_error()
+            db.commit()
+            raise JobError("Error while loading the dataset info.") from e
 
+        # Load dataset
+        try:
             dataset_path = f"{dataset.file_path}/dataset"
             dataset_dict = load_dataset(dataset_path, keep_in_memory=True)
             if int(target_column_index) < 1 or int(target_column_index) > len(
@@ -87,11 +102,16 @@ class ConverterListJob(BaseJob):
                 raise JobError(
                     f"Target column index {target_column_index} is out of bounds."
                 )
+        except Exception as e:
+            log.exception(e)
+            converter_list.set_status_as_error()
+            db.commit()
+            raise JobError(
+                f"Can not load dataset from path {dataset_path}"
+            ) from e
 
-            converter_list.set_status_as_started()
-
+        try:
             # Regex to convert camel case to snake case
-            # Source: https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
             camel_to_snake = re.compile(r"(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
 
             # Create a dictionary with the submodule for each converter
@@ -109,8 +129,7 @@ class ConverterListJob(BaseJob):
                         converter_name = file[:-3]
                         converter_submodule_inverse_index[converter_name] = submodule
 
-            # Keep a copy of the column names to be able to target the right columns in the scope
-            # even after reshaping the dataset
+            converters_to_apply: Dict[str, ConverterParams] = converter_list.converters
             dataset_original_columns = dataset_dict["train"].column_names
 
             for converter_name in converters_to_apply:
@@ -120,7 +139,6 @@ class ConverterListJob(BaseJob):
                 df_test = dataset_test.to_pandas()
                 dataset_validation: DashAIDataset = dataset_dict["validation"]
                 df_validation = dataset_validation.to_pandas()
-                # Concatenate the splits so the converter can transform all of them
                 df_concatenated = pd.concat([df_train, df_test, df_validation], axis=0)
 
                 # Get converter constructor and parameters
@@ -139,75 +157,61 @@ class ConverterListJob(BaseJob):
                     else {}
                 )
 
-                # Create the converter
+                # Create and apply converter
                 converter = converter_constructor(**converter_parameters)
-
-                # Get the scope
                 converter_scope = (
                     converters_to_apply[converter_name]["scope"]
                     if "scope" in converters_to_apply[converter_name].keys()
                     else {}
                 )
 
-                # Columns
+                # Process columns scope
                 columns_scope = [
                     column - 1 for column in converter_scope["columns"]
-                ]  # Convert to 0-index
-                scope_column_indexes = list(set(columns_scope))  # Remove duplicates
-                scope_column_indexes.sort()  # Sort the indexes
+                ]
+                scope_column_indexes = list(set(columns_scope))
+                scope_column_indexes.sort()
                 if scope_column_indexes == []:
                     scope_column_indexes = list(range(len(dataset_train.features)))
-                # We need to use column names to target the right columns in the scope
                 scope_column_names = [
                     dataset_original_columns[index] for index in scope_column_indexes
                 ]
 
-                # Rows
+                # Process rows scope
                 rows_scope = [
                     row - 1 for row in converter_scope["rows"]
-                ]  # Convert to 0-index
-                scope_rows_indexes = list(set(rows_scope))  # Remove duplicates
-                scope_rows_indexes.sort()  # Sort the indexes
+                ]
+                scope_rows_indexes = list(set(rows_scope))
+                scope_rows_indexes.sort()
                 if scope_rows_indexes == []:
                     scope_rows_indexes = list(range(len(df_concatenated)))
 
-                # Convert the target column index to 0-index
                 target_column_index = int(target_column_index) - 1
-                # Get the target column name
                 target_column_name = dataset_original_columns[target_column_index]
 
-                # Fit will only take the columns and rows that are in the scope
+                # Fit converter
                 X = df_concatenated[scope_column_names].iloc[scope_rows_indexes]
-                # Ensure that the df to fit is a Pandas DataFrame
-                if len(X.shape) == 1:  # If it is a Series, convert it to a DataFrame
+                if len(X.shape) == 1:
                     X = X.to_frame()
-
-                # Get the target column subsample
                 y = df_concatenated[target_column_name].iloc[scope_rows_indexes]
-
-                # Fit the converter
                 converter = converter.fit(X, y)
 
-                # Transform all rows but only the columns in the scope
+                # Transform data
                 X = df_concatenated[scope_column_names]
                 y = df_concatenated[target_column_name]
-
-                # Ensure that the df to be transformed is a Pandas DataFrame
                 if len(X.shape) == 1:
                     X = X.to_frame()
                 resulting_dataframe = converter.transform(X, y)
 
-                # Replace the cells
+                # Update dataframe
                 columns_to_drop = df_concatenated.columns[scope_column_indexes]
-                df_concatenated.drop(
-                    columns_to_drop, axis=1, inplace=True
-                )  # Drop helps with converters that change the number of columns
+                df_concatenated.drop(columns_to_drop, axis=1, inplace=True)
                 for i, column in enumerate(resulting_dataframe.columns):
                     df_concatenated.insert(
                         scope_column_indexes[i], column, resulting_dataframe[column]
                     )
 
-                # Update the splits
+                # Update splits
                 df_train = df_concatenated.iloc[: len(dataset_train)]
                 df_test = df_concatenated.iloc[
                     len(dataset_train) : len(dataset_train) + len(dataset_test)
@@ -216,7 +220,7 @@ class ConverterListJob(BaseJob):
                     len(dataset_train) + len(dataset_test) :
                 ]
 
-                # Create DatasetDict
+                # Create final dataset
                 dataset_dict = DatasetDict(
                     {
                         "train": Dataset.from_pandas(df_train, preserve_index=False),
@@ -227,15 +231,17 @@ class ConverterListJob(BaseJob):
                     }
                 )
                 dataset_dict = to_dashai_dataset(dataset_dict)
-            # Override the dataset
+
+            # Save the final dataset
             save_dataset(dataset_dict, f"{dataset_path}")
             converter_list.set_status_as_finished()
-
             db.commit()
             db.refresh(dataset)
 
         except Exception as e:
             log.exception(e)
+            converter_list.set_status_as_error()
+            db.commit()
             raise JobError(
-                f"Error while retrieving dataset with id {dataset_id}. Error: {e}"
-            )
+                f"Error while applying converters to dataset with id {dataset_id}. Error: {e}"
+            ) from e

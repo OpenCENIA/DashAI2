@@ -25,7 +25,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     to_dashai_dataset,
     update_columns_spec,
 )
-from DashAI.back.dependencies.database.models import Dataset
+from DashAI.back.dependencies.database.models import Dataset, Experiment
 from DashAI.back.dependencies.registry import ComponentRegistry
 
 logger = logging.getLogger(__name__)
@@ -180,6 +180,47 @@ async def get_info(
                 detail="Internal database error",
             ) from e
     return info
+
+
+@router.get("/{dataset_id}/experiments-exist")
+@inject
+async def get_experiments_exist(
+    dataset_id: int,
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+):
+    """Get a boolean indicating if there are experiments associated with the dataset.
+    
+    Parameters
+    ----------
+    dataset_id : int
+        id of the dataset to query.
+
+    Returns
+    -------
+    bool
+        True if there are experiments associated with the dataset, False otherwise.
+    """
+    with session_factory() as db:
+        try:
+            dataset = db.get(Dataset, dataset_id)
+            if not dataset:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Dataset not found",
+                )
+            # Check if there are any experiments associated with the dataset
+            experiments_exist = db.query(Experiment).filter(
+                Experiment.dataset_id == dataset_id
+            ).first() is not None
+
+            return experiments_exist
+        
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error",
+            ) from e
 
 
 @router.get("/{dataset_id}/types")
@@ -342,6 +383,75 @@ async def upload_dataset(
             ) from e
 
     logger.debug("Dataset creation sucessfully finished.")
+    return new_dataset
+
+@router.post("/copy", status_code=status.HTTP_201_CREATED)
+@inject
+async def copy_dataset(
+    dataset: Dict[str, int],
+    session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
+):
+    """Copy an existing dataset to create a new one.
+
+    Parameters
+    ----------
+    dataset_id : int
+        ID of the dataset to copy.
+
+    Returns
+    -------
+    Dataset
+        The newly created dataset.
+    """
+    dataset_id = dataset["dataset_id"]
+    print("COPYING DATASET", dataset_id)
+    logger.debug(f"Copying dataset with ID {dataset_id}.")
+
+    with session_factory() as db:
+        # Retrieve the existing dataset
+        original_dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
+        if not original_dataset:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Original dataset not found.",
+            )
+
+        # Create a new folder for the copied dataset
+        new_name = f"{original_dataset.name}_copy"
+        new_folder_path = config["DATASETS_PATH"] / new_name
+        try:
+            shutil.copytree(original_dataset.file_path, new_folder_path)
+        except FileExistsError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A dataset with the name '{new_name}' already exists.",
+            )
+        except Exception as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to copy dataset files.",
+            ) from e
+
+        # Save metadata for the new dataset
+        try:
+            new_dataset = Dataset(
+                name=new_name,
+                file_path=str(new_folder_path),
+            )
+            db.add(new_dataset)
+            db.commit()
+            db.refresh(new_dataset)
+        except exc.SQLAlchemyError as e:
+            logger.exception(e)
+            shutil.rmtree(new_folder_path, ignore_errors=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Internal database error.",
+            ) from e
+
+    logger.debug(f"Dataset copied successfully to '{new_name}'.")
     return new_dataset
 
 

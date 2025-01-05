@@ -26,12 +26,16 @@ import {
   getDatasetConverterList,
 } from "../../api/converter";
 import { ConverterListStatus } from "../../types/converter";
+import { getExperimentsExist } from "../../api/datasets";
+import CopyDatasetModal from "./CopyDatasetModal";
 
 function ConvertDatasetModal({ datasetId }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
   const [targetColumnIndex, setTargetColumnIndex] = useState(null);
   const [convertersToApply, setConvertersToApply] = useState([]);
+  const [openCopyModal, setOpenCopyModal] = useState(false);
+  const [datasetIdToModify, setDatasetIdToModify] = useState(datasetId);
   const [converterListId, setConverterListId] = useState(null);
   const [converterListStatus, setConverterListStatus] = useState(null);
   const [running, setRunning] = useState(false);
@@ -73,11 +77,11 @@ function ConvertDatasetModal({ datasetId }) {
     }
   };
 
-  const handleSaveConfig = async () => {
+  const saveAndEnqueueConverterList = async (id) => {
     try {
       // Save the list of converters to apply
       const response = await saveDatasetConverterList(
-        datasetId,
+        id,
         convertersToApply.reduce((acc, { name, params, scope, pipelineId }) => {
           acc[name] = {
             params: params,
@@ -117,14 +121,31 @@ function ConvertDatasetModal({ datasetId }) {
     }
   };
 
+  const handleSaveConfig = async () => {
+    // Check if there are experiments associated with the dataset
+    try {
+      const hasExperiments = await getExperimentsExist(datasetIdToModify);
+      if (hasExperiments) {
+        setOpenCopyModal(true);
+      } else {
+        await saveAndEnqueueConverterList(datasetIdToModify);
+      }
+    } catch (error) {
+      enqueueSnackbar(
+        "Error while trying to check if there are experiments associated with the dataset",
+        {
+          variant: "error",
+        },
+      );
+    }
+  };
+
   const getConverterListStatus = async () => {
     getDatasetConverterList(converterListId)
       .then((convertersFromDB) => {
-        console.log(convertersFromDB);
         setConverterListStatus(convertersFromDB.status);
       })
       .catch((error) => {
-        console.log(error);
         enqueueSnackbar("Error while trying to fetch converters", {
           variant: "error",
         });
@@ -193,7 +214,7 @@ function ConvertDatasetModal({ datasetId }) {
                   Dataset summary
                 </Typography>
               </Grid>
-              <DatasetSummaryTable datasetId={datasetId} />
+              <DatasetSummaryTable datasetId={datasetIdToModify} />
 
               {/* Converter selector */}
               <Grid item xs={12} display={"flex"} alignItems={"center"} gap={2}>
@@ -244,7 +265,7 @@ function ConvertDatasetModal({ datasetId }) {
               </Grid>
               {/* Selected converters table */}
               <ConverterTable
-                datasetId={datasetId}
+                datasetId={datasetIdToModify}
                 convertersToApply={convertersToApply}
                 setConvertersToApply={setConvertersToApply}
               />
@@ -269,6 +290,14 @@ function ConvertDatasetModal({ datasetId }) {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Modal to make a copy of the dataset */}
+      <CopyDatasetModal
+        datasetId={datasetIdToModify}
+        updateDatasetId={setDatasetIdToModify}
+        open={openCopyModal}
+        setOpen={setOpenCopyModal}
+        modifyDataset={saveAndEnqueueConverterList}
+      />
     </React.Fragment>
   );
 }

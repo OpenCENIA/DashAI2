@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { GridActionsCellItem } from "@mui/x-data-grid";
-import PropTypes from "prop-types";
 import {
   Box,
   IconButton,
@@ -15,20 +14,14 @@ import {
   Stack,
   DialogContentText,
   MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  OutlinedInput,
   Tooltip,
 } from "@mui/material";
 import { ArrowBackOutlined, Cable } from "@mui/icons-material";
-import uuid from "react-uuid";
 
 const ConverterPipelineModal = ({
   converters,
   setConvertersToApply,
   existingPipelines,
-  setExistingPipelines,
   converterToAdd,
 }) => {
   const [open, setOpen] = useState(false);
@@ -39,28 +32,29 @@ const ConverterPipelineModal = ({
       columns: [],
       rows: [],
     },
-    order: 0,
+    params: {
+      steps: [],
+    },
   });
+  const assignedPipeline = existingPipelines.find(
+    (pipeline) =>
+      pipeline.params.steps.some((converter) => converter.id === converterToAdd.id),
+  );
+  const alreadyInPipeline = assignedPipeline !== undefined;
 
   const handleOnChange = (event) => {
-    if (event.target.value === "new-pipeline") {
+    console.log(event.target.value);
+    if (event.target.value === "Remove from pipeline") {
       setSelectedPipeline({
-        name: "",
-        id: "new-pipeline",
-        scope: converterToAdd.scope,
-        order: converterToAdd.order, // It takes the order of the converter, which will make room for the new pipeline
-      });
-      return;
-    }
-    if (event.target.value === "no-pipeline") {
-      setSelectedPipeline({
-        name: "",
-        id: "no-pipeline",
+        name: "Remove from pipeline",
+        id: "Remove from pipeline",
         scope: {
           columns: [],
           rows: [],
         },
-        order: 0,
+        params: {
+          steps: [],
+        },
       });
       return;
     }
@@ -68,242 +62,74 @@ const ConverterPipelineModal = ({
     setSelectedPipeline(pipeline);
   };
 
-  const deletePipeline = (pipelineId) => {
-    setExistingPipelines((prev) => prev.filter((p) => p.id !== pipelineId));
-  };
-
-  const updatePipelineOrder = (pipelineId, order) => {
-    setExistingPipelines((prev) => {
-      const pipelineList = [...prev];
-      let pipelineIndex = pipelineList.findIndex(
-        (pipeline) => pipeline.id === pipelineId,
-      );
-      pipelineList[pipelineIndex] = {
-        ...pipelineList[pipelineIndex],
-        order: order,
+  const handleAddToExistingPipeline = () => {
+    // We move the convertToAdd from convertersToApply to selectedPipeline.params.steps
+    let updatedConverters = converters.filter(
+      (converter) => converter.id !== converterToAdd.id,
+    );
+    let pipelineIndex = updatedConverters.findIndex(
+      (converter) => converter.id === selectedPipeline.id,
+    );
+    if (pipelineIndex !== -1) {
+      updatedConverters[pipelineIndex] = {
+        ...updatedConverters[pipelineIndex],
+        params: {
+          ...updatedConverters[pipelineIndex].params,
+          steps: [
+            ...updatedConverters[pipelineIndex].params.steps,
+            converterToAdd,
+          ],
+        },
       };
-      return pipelineList;
-    });
+    }
+    setConvertersToApply(updatedConverters);
   };
 
-  const handleAddToNewPipeline = () => {
-    // Get name of the last pipeline created so the new pipeline can be named accordingly
-    let lastPipeline = existingPipelines[existingPipelines.length - 1];
-    let newPipelineIndex = lastPipeline
-      ? parseInt(lastPipeline.name.split(" ")[1]) + 1
-      : 1;
-    const pipelineId = uuid();
-    let pipelineToAssign = {
-      name: `Pipeline ${newPipelineIndex}`,
-      id: pipelineId, // Generate a unique id for the pipeline
-      scope: converterToAdd.scope, // It takes the scope of the converter
-      order: converterToAdd.order, // It takes the order of the converter, which will make room for the new pipeline
+  const moveConverterFromPipelineToSequence = () => {
+    // Find the index of the pipeline that contains the converter to remove
+    const pipelineIndex = converters.findIndex((converter) =>
+      converter.params.steps.some((step) => step.id === converterToAdd.id),
+    );
+
+    if (pipelineIndex === -1) {
+      return;
+    }
+
+    // Create the updated converters array
+    const updatedConverters = [
+      ...converters.slice(0, pipelineIndex + 1),
+      converterToAdd,
+      ...converters.slice(pipelineIndex + 1),
+    ];
+
+    // Update the pipeline by removing the converter from its steps
+    updatedConverters[pipelineIndex] = {
+      ...updatedConverters[pipelineIndex],
+      params: {
+        ...updatedConverters[pipelineIndex].params,
+        steps: updatedConverters[pipelineIndex].params.steps.filter(
+          (step) => step.id !== converterToAdd.id,
+        ),
+      },
     };
-    setExistingPipelines((prev) => [...prev, pipelineToAssign]);
 
-    setConvertersToApply((prev) =>
-      prev
-        .map((converter) => {
-          if (converter.id === converterToAdd.id) {
-            return {
-              ...converter,
-              pipelineId: pipelineId,
-              scope: converterToAdd.scope,
-              order: converterToAdd.order + 1, // Make room for the new pipeline
-            };
-          } else if (converter.order > converterToAdd.order) {
-            // Update the order of the converters that come after the new pipeline
-            return {
-              ...converter,
-              order: converter.order + 1,
-            };
-          }
-          return converter;
-        })
-        .sort((a, b) => a.order - b.order),
-    );
-  };
-
-  const handleAddToExistingPipeline = (pipelineToAssign) => {
-    // If the converter is being moved to a pipeline that comes after it
-    if (converterToAdd.order < pipelineToAssign.order) {
-      // Update the order of the pipeline and its converters,
-      // since this new converter will be moved to the end of the pipeline
-      updatePipelineOrder(pipelineToAssign.id, pipelineToAssign.order - 1);
-
-      setConvertersToApply((prev) =>
-        prev
-          .map((converter) => {
-            if (converter.id !== converterToAdd.id) {
-              if (
-                converter.pipelineId === pipelineToAssign.id &&
-                converter.order > converterToAdd.order
-              ) {
-                return {
-                  ...converter,
-                  order: converter.order - 1,
-                };
-              }
-              // If this converter is not in the same pipeline, do nothing
-              return converter;
-            } else {
-              let lastConverterInThisPipeline = prev.findLast(
-                (converter) => converter.pipelineId === pipelineToAssign.id,
-              );
-              return {
-                ...converter,
-                pipelineId: pipelineToAssign.id,
-                scope: pipelineToAssign.scope,
-                order: lastConverterInThisPipeline.order, // Take the place of the converter that was moved
-              };
-            }
-          })
-          .sort((a, b) => a.order - b.order),
-      );
-    } else {
-      // The converter is being moved to a pipeline that comes before it
-      setConvertersToApply((prev) =>
-        prev
-          .map((converter) => {
-            let lastConverterInThisPipeline = prev.findLast(
-              (converter) => converter.pipelineId === pipelineToAssign.id,
-            );
-            if (converter.id !== converterToAdd.id) {
-              // If this converter is in between the pipeline to assign and the selected converter
-              if (
-                converter.order < converterToAdd.order &&
-                converter.order > lastConverterInThisPipeline.order
-              ) {
-                return {
-                  ...converter,
-                  order: converter.order + 1,
-                };
-              }
-              // If this converter is not in between, do nothing
-              return converter;
-            } else {
-              return {
-                ...converter,
-                pipelineId: pipelineToAssign.id,
-                scope: pipelineToAssign.scope,
-                order: lastConverterInThisPipeline.order + 1, // Add the converter to the end of the pipeline
-              };
-            }
-          })
-          .sort((a, b) => a.order - b.order),
-      );
-    }
-  };
-
-  const handleRemoveFromPipeline = (pipelineIdToRemove) => {
-    // Check if pipeline has only one converter, if so, delete the pipeline
-    let pipelineToDelete = converters.filter(
-      (converter) => converter.pipelineId === pipelineIdToRemove,
-    );
-    if (pipelineToDelete.length === 1) {
-      deletePipeline(pipelineIdToRemove);
-      setConvertersToApply((prev) =>
-        prev
-          .map((converter) => {
-            if (converter.id === converterToAdd.id) {
-              return {
-                ...converter,
-                pipelineId: null,
-                order: converterToAdd.order - 1, // Take the place of the pipeline
-              };
-            }
-            if (converter.order > converterToAdd.order) {
-              // Update the order of the converters that come after the pipeline
-              return {
-                ...converter,
-                order: converter.order - 1,
-              };
-            }
-            return converter;
-          })
-          .sort((a, b) => a.order - b.order),
-      );
-    }
-    // Otherwise, move the converter out of the pipeline
-    else {
-      setConvertersToApply((prev) =>
-        prev
-          .map((converter) => {
-            if (converter.id !== converterToAdd.id) {
-              // If this converter is in the same pipeline
-              // and it comes after the converter to remove, update its order
-              if (
-                converter.pipelineId === pipelineIdToRemove &&
-                converter.order > converterToAdd.order
-              ) {
-                return {
-                  ...converter,
-                  order: converter.order - 1,
-                };
-              }
-              // If this converter comes before the converter to remove
-              // or it is not in the same pipeline, do nothing
-              return converter;
-            } else {
-              // If this converter is the one to remove
-              let lastConverterInThisPipeline = prev.findLast(
-                (converter) =>
-                  converter.pipelineId === pipelineIdToRemove &&
-                  converter.id !== converterToAdd.id,
-              );
-              return {
-                ...converter,
-                pipelineId: null,
-                scope: {
-                  columns: [],
-                  rows: [],
-                }, // Reset the scope
-                order: lastConverterInThisPipeline.order, // Move the converter out of the pipeline, taking the place of the last converter
-              };
-            }
-          })
-          .sort((a, b) => a.order - b.order),
-      );
-    }
+    setConvertersToApply(updatedConverters);
   };
 
   const handleOnSave = () => {
-    if (selectedPipeline.id === "new-pipeline") {
-      handleAddToNewPipeline();
-    } else if (selectedPipeline.id === "no-pipeline") {
-      handleRemoveFromPipeline(converterToAdd.pipelineId);
-    } else {
-      handleAddToExistingPipeline(selectedPipeline);
+    // If the selected item is Remove from pipeline, we remove the converter from the pipeline
+    if (selectedPipeline.id === "Remove from pipeline") {
+      moveConverterFromPipelineToSequence();
+      setOpen(false);
+      return;
     }
 
+    // Add the converter to the selected pipeline if not already in it
+    if (!alreadyInPipeline) {
+      handleAddToExistingPipeline();
+    }
     setOpen(false);
   };
-
-  //   useEffect(() => {
-  //     setSelectedPipeline(
-  //       converterToAdd.pipelineName
-  //         ? {
-  //             name: converterToAdd.pipelineName,
-  //             scope: converterToAdd.scope,
-  //           }
-  //         : {
-  //             name: "",
-  //             scope: {
-  //               columns: [],
-  //               rows: [],
-  //             },
-  //           },
-  //     );
-  //     return () => {
-  //       setSelectedPipeline({
-  //         name: "",
-  //         scope: {
-  //           columns: [],
-  //           rows: [],
-  //         },
-  //       });
-  //     };
-  //   }, [open]);
 
   return (
     <React.Fragment>
@@ -346,17 +172,15 @@ const ConverterPipelineModal = ({
               fullWidth
               label="Select pipeline"
             >
-              {existingPipelines.map((pipeline) => (
-                <MenuItem divider key={pipeline.id} value={pipeline.id}>
-                  {pipeline.name}
+              {existingPipelines.map((pipeline, index) => (
+                <MenuItem key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name} {index + 1}
                 </MenuItem>
               ))}
-
-              {!converterToAdd.pipelineId && (
-                <MenuItem value="new-pipeline">Create new pipeline</MenuItem>
-              )}
-              {converterToAdd.pipelineId && (
-                <MenuItem value="no-pipeline">Remove from pipeline</MenuItem>
+              {alreadyInPipeline && (
+                <MenuItem value="Remove from pipeline">
+                  Remove from pipeline
+                </MenuItem>
               )}
             </TextField>
           </Stack>

@@ -80,16 +80,45 @@ function ConvertDatasetModal({ datasetId }) {
   const saveAndEnqueueConverterList = async (id) => {
     try {
       // Save the list of converters to apply
+      let sequenceOrder = 1;
+
+      const flattenConverterList = convertersToApply.reduce(
+        (acc, { name, params, scope }) => {
+          // If the converter is a Pipeline, we need to store the steps separately
+          if (name === "Pipeline" && params?.steps) {
+            acc[name] = {
+              params: {
+                ...params,
+                steps: params.steps.length, // Store the number of steps in the Pipeline
+              },
+              scope: scope,
+              order: sequenceOrder,
+            };
+            params.steps.forEach((step) => {
+              sequenceOrder += 1; // Increase the `order` for each step
+              acc[step.name] = {
+                params: step.params,
+                scope: step.scope,
+                order: sequenceOrder,
+              };
+            });
+          } else {
+            sequenceOrder += 1; // Increase the `order` for each converter
+            acc[name] = {
+              params: params,
+              scope: scope,
+              order: sequenceOrder,
+            };
+          }
+
+          return acc;
+        },
+        {},
+      );
+
       const response = await saveDatasetConverterList(
         id,
-        convertersToApply.reduce((acc, { name, params, scope, pipelineId }) => {
-          acc[name] = {
-            params: params,
-            scope: scope,
-            pipelineId: pipelineId,
-          };
-          return acc;
-        }, {}),
+        flattenConverterList,
       );
       const converterListId = response.id;
       setConverterListId(converterListId);

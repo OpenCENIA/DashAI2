@@ -1,5 +1,8 @@
 # flake8: noqa
 
+# Pipeline utility
+from DashAI.back.converters.scikit_learn.pipeline import Pipeline
+
 # Cross decomposition module
 from DashAI.back.converters.scikit_learn.cca import CCA
 from DashAI.back.converters.scikit_learn.pls_canonical import PLSCanonical

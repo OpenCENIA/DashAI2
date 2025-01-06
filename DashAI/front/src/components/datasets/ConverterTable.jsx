@@ -14,7 +14,6 @@ const ConverterTable = ({
   convertersToApply,
   setConvertersToApply,
 }) => {
-  const [existingPipelines, setExistingPipelines] = useState([]);
   const [datasetInfo, setDatasetInfo] = useState({});
   const [loading, setLoading] = useState(true);
 
@@ -41,70 +40,72 @@ const ConverterTable = ({
     getDatasetInfo();
   }, []);
 
-  const updateOrder = (elementsToUpdate, orderOfTrigger, delta = 1) => {
-    const updatedElements = elementsToUpdate.map((element, index) => ({
-      ...element,
-      order:
-        element.order > orderOfTrigger ? element.order - delta : element.order, // Update order of elements after the deleted one
-    }));
-    return updatedElements;
-  };
-
   const createDeleteHandler = useCallback(
-    (id, order) => () => {
-      let pipelines = [...existingPipelines];
-      let converters = [...convertersToApply];
-      let deletedItemsCount = 1; // Number of items to delete. Default is 1
-      let isPipeline = pipelines.some((pipeline) => pipeline.id === id);
-      if (isPipeline) {
-        // Delete pipeline and all its converters
-        deletedItemsCount += converters.filter(
-          (converter) => converter.pipelineId === id,
-        ).length;
+    (id) => () => {
+      const removeById = (convertersArray, idToRemove) => {
+        return convertersArray.filter((converter) => {
+          // If the converter's id matches the id to remove, exclude it
+          if (converter.id === idToRemove) {
+            return false;
+          }
 
-        pipelines = pipelines.filter((pipeline) => pipeline.id !== id);
+          // If the converter is a pipeline, filter its content recursively
+          if (
+            converter.name === "Pipeline" &&
+            Array.isArray(converter.params.steps)
+          ) {
+            converter.params.steps = removeById(
+              converter.params.steps,
+              idToRemove,
+            );
+          }
+          // Include the converter in the result
+          return true;
+        });
+      };
 
-        converters = converters.filter(
-          (converter) => converter.pipelineId !== id,
-        );
-      } else {
-        // It is a converter
-        let assignedPipelineId = converters.find(
-          (converter) => converter.id === id,
-        )?.pipelineId;
-        // Check if the assigned pipeline is now empty and remove it from the list
-        let pipelineToDelete = converters.filter(
-          (converter) => converter.pipelineId === assignedPipelineId,
-        );
-        if (pipelineToDelete.length === 1) {
-          deletedItemsCount += 1;
-          pipelines = pipelines.filter(
-            (pipeline) => pipeline.id !== assignedPipelineId,
-          );
-        }
-        // Delete converter
-        converters = converters.filter((converter) => converter.id !== id);
-      }
-      setExistingPipelines(updateOrder(pipelines, order, deletedItemsCount));
-      setConvertersToApply(updateOrder(converters, order, deletedItemsCount));
+      let updatedConverters = removeById(convertersToApply, id);
+      setConvertersToApply(updatedConverters);
     },
-    [convertersToApply, existingPipelines],
+    [convertersToApply],
   );
 
   const handleUpdateParams = (id) => (newParams) => {
-    let updatedConverters = [...convertersToApply];
-    let index = updatedConverters.findIndex((converter) => converter.id === id);
-    if (index !== -1) {
-      updatedConverters[index] = {
-        ...updatedConverters[index],
-        params: newParams,
-      };
+    const updatePipelineParams = (converters) => {
+      return converters.map((converter) => {
+        // Check if the converter is the one we need to update
+        if (converter.id === id) {
+          return {
+            ...converter,
+            params: newParams,
+          };
+        }
 
-      setConvertersToApply(updatedConverters);
-    }
+        // If the converter is a Pipeline, recursively update its steps
+        if (
+          converter.name === "Pipeline" &&
+          Array.isArray(converter.params.steps)
+        ) {
+          return {
+            ...converter,
+            params: { steps: updatePipelineParams(converter.params.steps) },
+          };
+        }
+
+        // If no update is needed, return the converter as is
+        return converter;
+      });
+    };
+
+    // Create a new copy of the convertersToApply with updated parameters
+    const updatedConverters = updatePipelineParams(convertersToApply);
+
+    // Update the state with the new converters
+    setConvertersToApply(updatedConverters);
   };
 
   const handleUpdateScope = (id) => (newScope) => {
+    // Converters that are not in a pipeline can be updated
     let index = convertersToApply.findIndex((converter) => converter.id === id);
     if (index !== -1) {
       let updatedConverters = [...convertersToApply];
@@ -115,18 +116,6 @@ const ConverterTable = ({
 
       setConvertersToApply(updatedConverters);
       return;
-    }
-    let pipelineIndex = existingPipelines.findIndex(
-      (pipeline) => pipeline.id === id,
-    );
-    if (pipelineIndex !== -1) {
-      let updatedPipelines = [...existingPipelines];
-      updatedPipelines[pipelineIndex] = {
-        ...updatedPipelines[pipelineIndex],
-        scope: newScope,
-      };
-
-      setExistingPipelines(updatedPipelines);
     }
   };
 
@@ -146,20 +135,10 @@ const ConverterTable = ({
         editable: false,
         sortable: false,
         renderCell: ({ row }) => {
-          const inPipeline = row.pipelineId !== null;
-          const isPipeline = existingPipelines.some(
-            (pipeline) => pipeline.id === row.id,
-          );
           return (
             <Grid container>
               <Grid item xs={12}>
-                <Typography
-                  style={
-                    inPipeline && !isPipeline ? { marginLeft: "20px" } : {}
-                  }
-                >
-                  {row.name}
-                </Typography>
+                <Typography>{row.name}</Typography>
               </Grid>
             </Grid>
           );
@@ -178,15 +157,7 @@ const ConverterTable = ({
             columns.length > 0
               ? parseIndexToRange(columns).join(", ")
               : "All columns";
-          const inPipeline = row.pipelineId !== null;
-          const isPipeline = existingPipelines.some(
-            (pipeline) => pipeline.id === row.id,
-          );
-          return (
-            <Typography variant="p">
-              {isPipeline || !inPipeline ? columnsLabel : ""}
-            </Typography>
-          );
+          return <Typography variant="p">{columnsLabel}</Typography>;
         },
       },
       {
@@ -200,15 +171,7 @@ const ConverterTable = ({
           const rows = row.scope.rows;
           const rowsLabel =
             rows.length > 0 ? parseIndexToRange(rows).join(", ") : "All rows";
-          const inPipeline = row.pipelineId !== null;
-          const isPipeline = existingPipelines.some(
-            (pipeline) => pipeline.id === row.id,
-          );
-          return (
-            <Typography variant="p">
-              {isPipeline || !inPipeline ? rowsLabel : ""}
-            </Typography>
-          );
+          return <Typography variant="p">{rowsLabel}</Typography>;
         },
       },
       {
@@ -234,50 +197,75 @@ const ConverterTable = ({
               key="pipeline-component"
               converters={convertersToApply}
               setConvertersToApply={setConvertersToApply}
-              existingPipelines={existingPipelines}
-              setExistingPipelines={setExistingPipelines}
+              existingPipelines={convertersToApply.filter(
+                (converter) => converter.name === "Pipeline",
+              )}
               converterToAdd={params.row}
             />,
             <DeleteItemModal
               key="delete-component"
-              deleteFromTable={createDeleteHandler(params.id, params.row.order)}
+              deleteFromTable={createDeleteHandler(params.id)}
             />,
           ].filter((action) => {
-            // Show all actions if the item is not in a pipeline
-            if (params.row.pipelineId === null) {
-              return true;
-            }
-            // Hide edit and pipeline components if the item is a pipeline
-            let isPipeline = existingPipelines.some(
-              (pipeline) => pipeline.id === params.row.id,
-            );
-            if (isPipeline) {
+            if (params.row.name === "Pipeline") {
+              // Pipelines doesn't have hyperparameters and can't be added to another pipeline
               return (
                 action.key !== "edit-component" &&
                 action.key !== "pipeline-component"
               );
             }
-            // Hide scope component if the item is a converter in a pipeline
-            return action.key !== "scope-component";
+            let existingPipelines = convertersToApply.filter(
+              (converter) => converter.name === "Pipeline",
+            );
+            let existsPipelines = existingPipelines.length > 0;
+            let inPipeline = existingPipelines.some((pipeline) => {
+              return pipeline.params.steps.some(
+                (step) => step.id === params.row.id,
+              );
+            });
+            // Hide pipeline component if there are not pipelines
+            if (!existsPipelines) {
+              return action.key !== "pipeline-component";
+            }
+            // Hide scope component if the converter is already in a pipeline
+            if (inPipeline) {
+              return action.key !== "scope-component";
+            }
+            return true;
           }),
       },
     ],
     [createDeleteHandler],
   );
 
-  // Rows include both pipelines and converters
-  const rows = existingPipelines.reduce(
-    (acc, pipeline) => {
-      return [
-        ...acc,
-        pipeline,
-        ...convertersToApply.filter(
-          (converter) => converter.pipelineId === pipeline.id,
-        ),
-      ];
-    },
-    convertersToApply.filter((converter) => converter.pipelineId === null),
-  );
+  const rows = React.useMemo(() => {
+    const result = [];
+    convertersToApply.forEach((converter, index) => {
+      result.push({
+        id: converter.id,
+        order: index + 1,
+        name: converter.name,
+        params: converter.params,
+        scope: converter.scope,
+      });
+
+      if (
+        converter.name === "Pipeline" &&
+        Array.isArray(converter.params.steps)
+      ) {
+        converter.params.steps.forEach((step, stepIndex) => {
+          result.push({
+            id: step.id,
+            order: `${index + 1}.${stepIndex + 1}`,
+            name: step.name,
+            params: step.params,
+            scope: step.scope,
+          });
+        });
+      }
+    });
+    return result;
+  }, [convertersToApply]);
 
   return (
     <Grid container>

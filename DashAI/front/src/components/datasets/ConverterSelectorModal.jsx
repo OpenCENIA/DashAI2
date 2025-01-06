@@ -57,17 +57,15 @@ const ConverterSelectorModal = ({ setConvertersToApply }) => {
 
   const handleAddConverter = () => {
     setOpen(false);
+    let defaultParams =
+      selectedConverter.name === "Pipeline" ? { steps: [] } : defaultParameters;
     setConvertersToApply((prev) => [
       ...prev,
       {
         id: uuid(),
-        order: prev[prev.length - 1]?.order
-          ? prev[prev.length - 1].order + 1
-          : 1,
-        pipelineId: null,
         name: selectedConverter.name,
         schema: selectedConverter.schema,
-        params: defaultParameters,
+        params: defaultParams,
         scope: {
           columns: [],
           rows: [],

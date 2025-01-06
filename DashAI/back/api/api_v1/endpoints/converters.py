@@ -15,11 +15,16 @@ router = APIRouter()
 
 
 class ConverterParams(PydanticBaseModel):
+    order: int = 0
     params: Dict[str, Union[str, int, float, bool]] = None
     scope: Dict[str, List[int]] = None
 
     def serialize(self) -> Dict[str, Any]:
-        return {"params": self.params, "scope": self.scope}
+        return {
+            "order": self.order,
+            "params": self.params,
+            "scope": self.scope,
+        }
 
 
 class ConverterListParams(PydanticBaseModel):

@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import PropTypes from "prop-types";
 import { DataGrid } from "@mui/x-data-grid";
 import { Grid, Paper, Typography } from "@mui/material";
 import DeleteItemModal from "../custom//DeleteItemModal";
 import EditModelDialog from "./EditModelDialog";
+import ModelsTableSelectMetric from "./ModelsTableSelectMetric";
 
 /**
  * This component renders a table to display the models that are currently in the experiment
@@ -11,25 +12,62 @@ import EditModelDialog from "./EditModelDialog";
  * @param {function} setNewExp updates the Eperimento Modal state (newExp)
  */
 function ModelsTable({ newExp, setNewExp }) {
+  const [selectedMetric, setSelectedMetric] = useState({});
+
   const handleDeleteModel = (id) => {
     setNewExp({
       ...newExp,
       runs: newExp.runs.filter((model) => model.id !== id),
     });
   };
-
   const handleUpdateParameters = (id) => (newValues) => {
     setNewExp((prevExp) => {
       return {
         ...prevExp,
         runs: prevExp.runs.map((model) => {
           if (model.id === id) {
-            return { ...model, params: newValues };
+            return {
+              ...model,
+              params: newValues,
+              goal_metric: selectedMetric[id],
+            };
           }
           return model;
         }),
       };
     });
+  };
+
+  const handleAddMetric = async (name, id) => {
+    // sets the default values of the newly added optimizer, making optional the parameter configuration
+
+    const metricRun = newExp.runs.map((run) => {
+      if (run.id === id) {
+        return {
+          ...run,
+          goal_metric: name,
+        };
+      }
+      return run;
+    });
+
+    setNewExp((prevExp) => {
+      return {
+        ...prevExp,
+        runs: metricRun,
+      };
+    });
+  };
+
+  const handleSelectedMetric = async (name, id) => {
+    setSelectedMetric((prevSelectedMetric) => {
+      return {
+        ...prevSelectedMetric,
+        [id]: name,
+      };
+    });
+
+    handleAddMetric(name, id);
   };
 
   const columns = React.useMemo(
@@ -45,6 +83,20 @@ function ModelsTable({ newExp, setNewExp }) {
         headerName: "Model",
         minWidth: 450,
         editable: false,
+      },
+      {
+        field: "metric",
+        headerName: "Select Metric",
+        minWidth: 300,
+        renderCell: (params) => (
+          <ModelsTableSelectMetric
+            taskName={newExp.task_name}
+            metricName={selectedMetric[params.row.id]}
+            handleSelectedMetric={(metricName) =>
+              handleSelectedMetric(metricName, params.row.id)
+            }
+          />
+        ),
       },
       {
         field: "actions",

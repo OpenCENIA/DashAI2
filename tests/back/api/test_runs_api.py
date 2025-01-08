@@ -78,8 +78,8 @@ def test_create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            "goal_metric": "Accuracy",
             "description": "This is a test run",
         },
     )
@@ -100,8 +100,8 @@ def test_create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            "goal_metric": "Accuracy",
             "description": "This is a test run",
         },
     )

@@ -10,6 +10,8 @@ from DashAI.back.tasks.base_task import BaseTask
 class TranslationTask(BaseTask):
     """Base class for translation task."""
 
+    COMPATIBLE_COMPONENTS = ["Accuracy", "F1", "Precision", "Recall"]
+
     metadata: dict = {
         "inputs_types": [Value, Sequence],
         "outputs_types": [Value, Sequence],

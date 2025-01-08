@@ -1,7 +1,4 @@
-import numpy as np
 import optuna
-import plotly
-import plotly.graph_objects as go
 
 from DashAI.back.core.schema_fields import (
     BaseSchema,
@@ -31,12 +28,6 @@ class OptunaSchema(BaseSchema):
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels"
         ". Must be in string format and can be 'scale' or 'auto'.",
     )  # type: ignore
-    metric: schema_field(
-        enum_field(enum=["Accuracy", "F1", "Precision", "Recall"]),
-        placeholder="Accuracy",
-        description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels."
-        "Must be in string format and can be 'scale' or 'auto'.",
-    )  # type: ignore
 
 
 class OptunaOptimizer(BaseOptimizer):
@@ -48,13 +39,12 @@ class OptunaOptimizer(BaseOptimizer):
         "TranslationTask",
     ]
 
-    def __init__(self, n_trials=None, sampler=None, pruner=None, metric=None):
+    def __init__(self, n_trials=None, sampler=None, pruner=None):
         self.n_trials = n_trials
         self.sampler = getattr(optuna.samplers, sampler)
         self.pruner = pruner
-        self.metric = metric
 
-    def optimize(self, model, input_dataset, output_dataset, parameters, task):
+    def optimize(self, model, input_dataset, output_dataset, parameters, metric, task):
         """
         Optimization process
 
@@ -73,7 +63,7 @@ class OptunaOptimizer(BaseOptimizer):
         self.output_dataset = output_dataset
         self.parameters = parameters
 
-        if self.metric["name"] in ["Accuracy", "F1", "Precision", "Recall"]:
+        if metric["name"] in ["Accuracy", "F1", "Precision", "Recall"]:
             study = optuna.create_study(
                 direction="maximize", sampler=self.sampler(), pruner=self.pruner
             )
@@ -82,7 +72,7 @@ class OptunaOptimizer(BaseOptimizer):
                 direction="minimize", sampler=self.sampler(), pruner=self.pruner
             )
 
-        self.metric = self.metric["class"]
+        self.metric = metric["class"]
 
         if task == "TextClassificationTask":
 
@@ -131,37 +121,9 @@ class OptunaOptimizer(BaseOptimizer):
     def get_model(self):
         return self.model
 
-    def get_metrics(self):
-        x = [trial.number for trial in self.study.trials]
-        y = [trial.value for trial in self.study.trials]
-        return x, y
-
-    def create_plot(self, x, y):
-        max_cumulative = np.maximum.accumulate(y)
-        fig = go.Figure()
-        fig.add_trace(
-            go.Scatter(
-                x=x,
-                y=y,
-                mode="markers",
-                name="Optimization History",
-                marker_color="blue",
-                marker_size=8,
-            )
-        )
-        fig.add_trace(
-            go.Scatter(
-                x=x,
-                y=max_cumulative,
-                mode="lines",
-                name="Current Max Value",
-                line_color="red",
-                line_width=2,
-            )
-        )
-        fig.update_layout(
-            title="Optimization History with Current Max Value",
-            xaxis_title="Trial",
-            yaxis_title="Objective Value",
-        )
-        return plotly.io.to_json(fig)
+    def get_trials_values(self):
+        trials = []
+        for trial in self.study.trials:
+            if trial.state == optuna.trial.TrialState.COMPLETE:
+                trials.append({"params": trial.params, "value": trial.value})
+        return trials

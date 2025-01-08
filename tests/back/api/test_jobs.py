@@ -174,8 +174,8 @@ def create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            "goal_metric": "Accuracy",
             "description": "This is a test run",
         },
     )
@@ -203,8 +203,8 @@ def create_failed_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            goal_metric="Accuracy",
             name="DummyRun2",
         )
         db.add(run)

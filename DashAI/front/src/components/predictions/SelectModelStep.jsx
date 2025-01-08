@@ -114,7 +114,7 @@ function SelectModelStep({
   }, [predictName, rowClicked, setNextEnabled]);
 
   useEffect(() => {
-    get_Models("SelectModelStep");
+    get_Models();
   }, []);
 
   return (

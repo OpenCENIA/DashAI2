@@ -43,3 +43,17 @@ export const filter_datasets = async (requestData: IParamsFilter) => {
   );
   return response.data;
 };
+
+export const get_predict_summary = async (predictionId: string) => {
+  const response = await api.get(`${predictEndpoint}/predict_summary`, {
+    params: {
+      pred_name: predictionId,
+    },
+  });
+  return response.data;
+};
+
+export const download_predict = async (predict_name: string) => {
+  const response = await api.get(`${predictEndpoint}/download/${predict_name}`);
+  return response.data;
+};

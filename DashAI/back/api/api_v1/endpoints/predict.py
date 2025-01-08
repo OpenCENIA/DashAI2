@@ -5,6 +5,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
 from kink import di, inject
 from sqlalchemy.orm import sessionmaker
 
@@ -178,6 +179,52 @@ async def get_model_table(
         return prediction_data
 
 
+@router.get("/predict_summary")
+@inject
+async def get_predict_summary(
+    pred_name: str, config: dict = Depends(lambda: di["config"])
+):
+    path = Path(f"{config['DATASETS_PATH']}/predictions/{pred_name}")
+    summary = {}
+    try:
+        with open(path, "r") as f:
+            try:
+                data = json.load(f)["prediction"]
+            except json.JSONDecodeError:
+                raise HTTPException(status_code=400, detail="Invalid JSON format")
+            summary["total_data_points"] = len(data)
+            class_set = set(data)
+            classes = [str(item) for item in class_set]
+            summary["Unique_classes"] = len(classes)
+            class_distribution = []
+            id = 1
+            for class_name in classes:
+                try:
+                    occurrences = data.count(int(class_name))
+                except ValueError:
+                    raise HTTPException(
+                        status_code=400, detail=f"Invalid class value: {class_name}"
+                    )
+                distribution = {
+                    "id": id,
+                    "Class": class_name,
+                    "Ocurrences": occurrences,
+                    "Percentage": round(occurrences / len(data) * 100, 2),
+                }
+                id += 1
+                class_distribution.append(distribution)
+            summary["class_distribution"] = class_distribution
+            sample_data = [
+                {"id": idx, "value": value} for idx, value in enumerate(data[:50], 1)
+            ]
+            summary["sample_data"] = sample_data
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    return summary
+
+
 @router.post("/filter_datasets")
 async def filter_datasets_endpoint(
     params: filterDatasetParams,
@@ -226,6 +273,45 @@ async def filter_datasets_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while filtering datasets",
+        )
+
+
+@router.get("/download/{predict_name}")
+@inject
+async def download_prediction(
+    predict_name: str,
+    config: dict = Depends(lambda: di["config"]),
+):
+    """
+    Downloads a prediction file based on the provided predict_name.
+
+    Parameters
+    ----------
+    predict_name : str
+        The name of the prediction file to download.
+
+    Raises
+    ------
+    HTTPException
+        If the file cannot be found.
+    """
+    logger.debug("Downloading prediction file with name %s", predict_name)
+    predict_path = os.path.join(config["DATASETS_PATH"], "predictions", predict_name)
+    try:
+        if os.path.exists(predict_path):
+            with open(predict_path, "r") as json_file:
+                data = json.load(json_file)
+                return data["prediction"]
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="File not found",
+            )
+    except Exception as e:
+        logger.exception("Error downloading file %s: %s", predict_name, str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred while downloading the prediction file",
         )
 
 
@@ -289,7 +375,7 @@ async def rename_prediction(
     HTTPException
         If the file cannot be found or renamed.
     """
-    new_name = f"{request.new_name}.json "
+    new_name = f"{request.new_name}.json"
     logger.debug("Renaming prediction file from %s to %s", predict_name, new_name)
     predict_path = os.path.join(config["DATASETS_PATH"], "predictions", predict_name)
     new_path = os.path.join(config["DATASETS_PATH"], "predictions", new_name)

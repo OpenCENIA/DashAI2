@@ -18,9 +18,11 @@ import { useSnackbar } from "notistack";
 function EditPredictionModal({ predictName, updatePredictions }) {
   const { enqueueSnackbar } = useSnackbar();
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [newPredictName, setPredictName] = useState("");
 
   const editPrediction = async () => {
+    setLoading(true);
     try {
       await renamePredictionRequest(predictName, newPredictName);
       updatePredictions();
@@ -36,11 +38,14 @@ function EditPredictionModal({ predictName, updatePredictions }) {
       } else {
         console.error("Unknown Error", error.message);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSaveConfig = () => {
     editPrediction();
+    setPredictName("");
     setOpen(false);
   };
 

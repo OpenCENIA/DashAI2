@@ -1,19 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
-import api from "../../api/api";
-import {
-  TextField,
-  Button,
-  Typography,
-  Box,
-  CircularProgress,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
 import { useSnackbar } from "notistack";
 import {
   enqueuePredictionJob as enqueuePredictionRequest,
   startJobQueue as startJobQueueRequest,
 } from "../../api/job";
-import { getRunStatus } from "../../utils/runStatus";
 
 const PredictForm = ({
   run_id,

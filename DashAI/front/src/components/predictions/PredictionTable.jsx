@@ -14,6 +14,7 @@ import {
 import DeleteItemModal from "../custom/DeleteItemModal";
 import EditPredictionModal from "./EditPredictionModal";
 import PredictionSummaryModal from "./PredictionSummaryModal";
+import DownloadPrediction from "./DownloadPrediction";
 
 function PredictionTable({
   handleNewPredict,
@@ -28,7 +29,6 @@ function PredictionTable({
     setLoading(true);
     try {
       const uniqueModels = await get_metadata_prediction_json();
-      console.log(uniqueModels);
       setModels(uniqueModels);
     } catch (error) {
       enqueueSnackbar("Error when trying to get the predictions");
@@ -139,6 +139,10 @@ function PredictionTable({
             key="summary-component"
             predictName={params.row.pred_name}
           />,
+          <DownloadPrediction
+            key="download-component"
+            predictName={params.row.pred_name}
+          />,
         ],
       },
     ],
@@ -185,10 +189,10 @@ function PredictionTable({
       <DataGrid
         rows={models}
         columns={columns}
-        initialState={{
+        initialstate={{
           pagination: {
-            paginationModel: {
-              columns: 5,
+            paginationmodel: {
+              pagesize: 5,
             },
           },
         }}

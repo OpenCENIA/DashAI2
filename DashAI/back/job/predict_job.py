@@ -121,6 +121,7 @@ class PredictJob(BaseJob):
 
         try:
             path = str(Path(f"{config['DATASETS_PATH']}/predictions/"))
+            os.makedirs(path, exist_ok=True)
             existing_files = os.listdir(path)
             existing_ids = []
             for f in existing_files:
@@ -144,8 +145,6 @@ class PredictJob(BaseJob):
                 },
                 "prediction": y_pred.tolist(),
             }
-
-            os.makedirs(path, exist_ok=True)
 
             with open(os.path.join(path, json_name), "w") as json_file:
                 json.dump(json_data, json_file, indent=4)

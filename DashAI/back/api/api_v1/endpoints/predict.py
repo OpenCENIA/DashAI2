@@ -24,7 +24,9 @@ router = APIRouter()
 
 @router.get("/metadata_json/")
 @inject
-async def get_metadata_prediction_json(config: dict = Depends(lambda: di["config"])):
+async def get_metadata_prediction_json(
+    config: dict = Depends(lambda: di["config"]), path: Path = Path("")
+):
     """
     Fetches prediction metadata from JSON files.
 
@@ -43,7 +45,8 @@ async def get_metadata_prediction_json(config: dict = Depends(lambda: di["config
     HTTPException
         If the directory or files cannot be accessed.
     """
-    path = Path(f"{config['DATASETS_PATH']}/predictions/")
+    if path == Path(""):
+        path = Path(f"{config['DATASETS_PATH']}/predictions/")
     try:
         path.mkdir(parents=True, exist_ok=True)
         files = os.listdir(path)
@@ -64,7 +67,7 @@ async def get_metadata_prediction_json(config: dict = Depends(lambda: di["config
     return prediction_data
 
 
-@router.get("/prediciton_table")
+@router.get("/prediction_table")
 @inject
 async def get_prediction_table(
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
@@ -214,10 +217,10 @@ async def get_predict_summary(
                 id += 1
                 class_distribution.append(distribution)
             summary["class_distribution"] = class_distribution
-            sample_data = [
-                {"id": idx, "value": value} for idx, value in enumerate(data[:50], 1)
-            ]
-            summary["sample_data"] = sample_data
+        sample_data = [
+            {"id": idx, "value": value} for idx, value in enumerate(data[:50], 1)
+        ]
+        summary["sample_data"] = sample_data
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Prediction not found")
     except Exception as e:
@@ -258,7 +261,6 @@ async def filter_datasets_endpoint(
                 )
             train_dataset_spec = get_columns_spec(file_path)
             for dataset_path in datasets_paths:
-                # dataset_path = f"{dataset_path}\\dataset"
                 dataset_spec = get_columns_spec(f"{dataset_path}\\dataset")
                 if train_dataset_spec == dataset_spec:
                     dataset = (
@@ -345,6 +347,8 @@ async def delete_prediction(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="File not found",
             )
+    except HTTPException as e:
+        raise e
     except Exception as e:
         logger.exception("Error deleting file %s: %s", predict_name, str(e))
         raise HTTPException(
@@ -396,6 +400,8 @@ async def rename_prediction(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="File not found",
             )
+    except HTTPException as e:
+        raise e
     except Exception as e:
         logger.exception(
             "Error renaming file %s to %s: %s", predict_name, new_name, str(e)

@@ -5,7 +5,7 @@ import {
   startJobQueue as startJobQueueRequest,
 } from "../../api/job";
 
-const PredictForm = ({
+const EnqueuePrediction = ({
   run_id,
   id,
   json_filename,
@@ -83,4 +83,4 @@ const PredictForm = ({
   return <div>{loading && <p>Loading...</p>}</div>;
 };
 
-export default PredictForm;
+export default EnqueuePrediction;

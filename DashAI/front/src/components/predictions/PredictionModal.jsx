@@ -21,7 +21,7 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import SelectModelStep from "./SelectModelStep";
 import SelectDatasetStep from "./SelectDatasetStep";
-import PredictForm from "./EnqueuePrediction";
+import EnqueuePrediction from "./EnqueuePrediction";
 
 function PredictionModal({ open, onClose, updatePredictions }) {
   const theme = useTheme();
@@ -152,7 +152,7 @@ function PredictionModal({ open, onClose, updatePredictions }) {
           />
         )}
         {activeStep === 2 && (
-          <PredictForm
+          <EnqueuePrediction
             run_id={selectedModelId}
             id={selectedDatasetId}
             json_filename={predictName}

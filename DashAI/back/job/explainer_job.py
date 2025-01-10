@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     load_dataset,
     select_columns,
+    split_dataset,
+    split_indexes,
     update_dataset_splits,
 )
 from DashAI.back.dependencies.database.models import (
@@ -269,6 +271,35 @@ class ExplainerJob(BaseJob):
                 ) from e
             try:
                 splits = json.loads(experiment.splits)
+                dataset_splits_path = f"{dataset.file_path}/dataset/dataset_dict.json"
+
+                if (
+                    not os.path.exists(dataset_splits_path)
+                    or os.path.getsize(dataset_splits_path) == 0
+                ):
+                    raise JobError(
+                        f"Dataset splits file is missing: {dataset_splits_path}"
+                    )
+
+                with open(dataset_splits_path, "r") as f:
+                    dataset_splits = json.load(f)
+
+                already_splited = len(dataset_splits) != 1
+
+                if not already_splited:
+                    n = len(loaded_dataset["train"])
+                    train_indexes, test_indexes, val_indexes = split_indexes(
+                        n,
+                        splits["train"],
+                        splits["test"],
+                        splits["validation"],
+                    )
+                    loaded_dataset = split_dataset(
+                        loaded_dataset["train"],
+                        train_indexes=train_indexes,
+                        test_indexes=test_indexes,
+                        val_indexes=val_indexes,
+                    )
                 if splits["has_changed"]:
                     new_splits = {
                         "train": splits["train"],

@@ -9,6 +9,8 @@ import {
   Grid,
   Button,
   DialogActions,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import DatasetSummaryTable from "./DatasetSummaryTable";
 
@@ -20,13 +22,19 @@ function DatasetSummaryModal({ datasetId }) {
   };
   return (
     <React.Fragment>
-      <GridActionsCellItem
-        key="dataset-summary-button"
-        icon={<Search />}
-        label="Dataset Summary"
-        onClick={() => setOpen(true)}
-        sx={{ color: "warning.main" }}
-      />
+      <Tooltip
+        title={<Typography>Dataset summary</Typography>}
+        placement="top"
+        arrow
+      >
+        <GridActionsCellItem
+          key="dataset-summary-button"
+          icon={<Search />}
+          label="Dataset Summary"
+          onClick={() => setOpen(true)}
+          sx={{ color: "warning.main" }}
+        />
+      </Tooltip>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

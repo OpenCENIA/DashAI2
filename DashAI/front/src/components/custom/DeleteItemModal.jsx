@@ -9,6 +9,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 
 function DeleteItemModal({ deleteFromTable }) {
@@ -20,14 +22,19 @@ function DeleteItemModal({ deleteFromTable }) {
   return (
     <React.Fragment>
       {/* Delete icon button */}
-      <GridActionsCellItem
-        key="delete-button"
-        icon={<DeleteIcon />}
-        label="Delete"
-        onClick={() => setOpen(true)}
-        sx={{ color: "error.main" }}
-      />
-
+      <Tooltip
+        title={<Typography>Delete item</Typography>}
+        placement="top"
+        arrow
+      >
+        <GridActionsCellItem
+          key="delete-button"
+          icon={<DeleteIcon />}
+          label="Delete"
+          onClick={() => setOpen(true)}
+          sx={{ color: "error.main" }}
+        />
+      </Tooltip>
       {/* Modal to confirm deletion */}
       <Dialog open={open} onClose={() => setOpen(false)}>
         <DialogTitle>Confirm Deletion</DialogTitle>

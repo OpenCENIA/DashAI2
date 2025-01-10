@@ -90,7 +90,7 @@ function ItemSelectorWithInfo({
             ) : (
               <Grid item xs={12}>
                 <Typography variant="subtitle1">
-                  Select a task to see the description.
+                  Select an element from the list to see its description.
                 </Typography>
               </Grid>
             )}

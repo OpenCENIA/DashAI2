@@ -10,6 +10,7 @@ import {
   DialogTitle,
   Grid,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { updateDataset as updateDatasetRequest } from "../../api/datasets";
@@ -46,13 +47,19 @@ function EditDatasetModal({ datasetId, name, updateDatasets }) {
 
   return (
     <React.Fragment>
-      <GridActionsCellItem
-        key="edit-button"
-        icon={<EditIcon />}
-        label="Edit"
-        onClick={() => setOpen(true)}
-        sx={{ color: "warning.main" }}
-      />
+      <Tooltip
+        title={<Typography>Rename dataset</Typography>}
+        placement="top"
+        arrow
+      >
+        <GridActionsCellItem
+          key="edit-button"
+          icon={<EditIcon />}
+          label="Edit"
+          onClick={() => setOpen(true)}
+          sx={{ color: "warning.main" }}
+        />
+      </Tooltip>
       <Dialog
         open={open}
         onClose={() => setOpen(false)}

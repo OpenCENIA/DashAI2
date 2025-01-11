@@ -52,7 +52,6 @@ class PredictJob(BaseJob):
         session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
         config=lambda di: di["config"],
     ) -> List[Any]:
-
         run_id: int = self.kwargs["run_id"]
         id: int = self.kwargs["id"]
         db: Session = self.kwargs["db"]
@@ -112,7 +111,7 @@ class PredictJob(BaseJob):
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid columns selected: {str(ve)}",
-            )
+            ) from ve
         except Exception as e:
             log.error(e)
             raise JobError(

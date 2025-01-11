@@ -5,13 +5,12 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, status
 from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
 from kink import di, inject
 from sqlalchemy.orm import sessionmaker
 
 from DashAI.back.api.api_v1.schemas.predict_params import (
+    FilterDatasetParams,
     RenameRequest,
-    filterDatasetParams,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import get_columns_spec
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
@@ -51,7 +50,7 @@ async def get_metadata_prediction_json(
         path.mkdir(parents=True, exist_ok=True)
         files = os.listdir(path)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
     json_files = [f for f in files if f.endswith(".json")]
     if not json_files:
@@ -193,8 +192,10 @@ async def get_predict_summary(
         with open(path, "r") as f:
             try:
                 data = json.load(f)["prediction"]
-            except json.JSONDecodeError:
-                raise HTTPException(status_code=400, detail="Invalid JSON format")
+            except json.JSONDecodeError as e:
+                raise HTTPException(
+                    status_code=400, detail="Invalid JSON format"
+                ) from e
             summary["total_data_points"] = len(data)
             class_set = set(data)
             classes = [str(item) for item in class_set]
@@ -204,10 +205,10 @@ async def get_predict_summary(
             for class_name in classes:
                 try:
                     occurrences = data.count(int(class_name))
-                except ValueError:
+                except ValueError as e:
                     raise HTTPException(
                         status_code=400, detail=f"Invalid class value: {class_name}"
-                    )
+                    ) from e
                 distribution = {
                     "id": id,
                     "Class": class_name,
@@ -221,16 +222,16 @@ async def get_predict_summary(
             {"id": idx, "value": value} for idx, value in enumerate(data[:50], 1)
         ]
         summary["sample_data"] = sample_data
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail="Prediction not found")
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Prediction not found") from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
     return summary
 
 
 @router.post("/filter_datasets")
 async def filter_datasets_endpoint(
-    params: filterDatasetParams,
+    params: FilterDatasetParams,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
 ):
     """
@@ -275,7 +276,7 @@ async def filter_datasets_endpoint(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while filtering datasets",
-        )
+        ) from e
 
 
 @router.get("/download/{predict_name}")
@@ -314,7 +315,7 @@ async def download_prediction(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while downloading the prediction file",
-        )
+        ) from e
 
 
 @router.delete("/{predict_name}")
@@ -354,7 +355,7 @@ async def delete_prediction(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while deleting the prediction file",
-        )
+        ) from e
 
 
 @router.patch("/{predict_name}")
@@ -409,4 +410,4 @@ async def rename_prediction(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred while renaming the prediction file",
-        )
+        ) from e

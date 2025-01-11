@@ -11,6 +11,6 @@ class RenameRequest(BaseModel):
     new_name: str
 
 
-class filterDatasetParams(BaseModel):
+class FilterDatasetParams(BaseModel):
     train_dataset_id: int
     datasets: List[str]

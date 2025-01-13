@@ -254,15 +254,15 @@ async def filter_datasets_endpoint(
             train_dataset_id = params.train_dataset_id
             datasets_paths = params.datasets
             filtered_list = []
-            file_path = f"{db.get(Dataset, train_dataset_id).file_path}\\dataset"
+            file_path = Path(db.get(Dataset, train_dataset_id).file_path, "dataset")
             if not file_path:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Dataset not found",
                 )
-            train_dataset_spec = get_columns_spec(file_path)
+            train_dataset_spec = get_columns_spec(str(file_path))
             for dataset_path in datasets_paths:
-                dataset_spec = get_columns_spec(f"{dataset_path}\\dataset")
+                dataset_spec = get_columns_spec(str(Path(dataset_path, "dataset")))
                 if train_dataset_spec == dataset_spec:
                     dataset = (
                         db.query(Dataset)

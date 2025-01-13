@@ -33,7 +33,12 @@ def create_dataset(client):
             },
             files={"file": ("filename", csv, "text/csv")},
         )
-    return response.json()["id"]
+    dataset_id = response.json()["id"]
+
+    yield response.json()["id"]
+
+    response = client.delete(f"/api/v1/dataset/{dataset_id}")
+    assert response.status_code == 204, response.text
 
 
 @pytest.fixture(scope="module", name="experiment_id")
@@ -61,7 +66,10 @@ def create_experiment(client: TestClient, dataset_id):
             ),
         },
     )
-    return response.json()["id"]
+
+    yield response.json()["id"]
+    response = client.delete(f"/api/v1/experiment/{response.json()['id']}")
+    assert response.status_code == 204, response.text
 
 
 def test_create_run(client: TestClient, experiment_id: int):

@@ -62,7 +62,12 @@ def create_dataset(client):
             },
             files={"file": ("filename", csv, "text/csv")},
         )
-    return response.json()["id"]
+    dataset_id = response.json()["id"]
+
+    yield dataset_id
+
+    response = client.delete(f"/api/v1/dataset/{dataset_id}")
+    assert response.status_code == 204, response.text
 
 
 class DummyTask(BaseTask):

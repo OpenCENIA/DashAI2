@@ -17,7 +17,17 @@ class OptunaSchema(BaseSchema):
         "per study. It must be of type positive integer.",
     )  # type: ignore
     sampler: schema_field(
-        enum_field(enum=["TPESampler", "CmaEsSampler"]),
+        enum_field(
+            enum=[
+                "TPESampler",
+                "CmaEsSampler",
+                "GridSampler",
+                "GPSampler",
+                "NSGAIISampler",
+                "QMCSampler",
+                "RandomSampler",
+            ]
+        ),
         placeholder="TPESampler",
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels"
         ". Must be in string format and can be 'scale' or 'auto'.",

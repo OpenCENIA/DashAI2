@@ -66,7 +66,7 @@ class OptunaOptimizer(BaseOptimizer):
 
         Returns
         -------
-            best_model: Object from the class model with the best hyperparameters found.
+            None
         """
         self.model = model
         self.input_dataset = input_dataset

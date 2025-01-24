@@ -33,7 +33,7 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
         Returns
         -------
-            best_model: Object from the class model with the best hyperparameters found.
+            None
         """
         raise NotImplementedError(
             "Optimization modules must implement optimize method."
@@ -41,17 +41,44 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
 
     @abstractmethod
     def get_model(self):
+        """
+        Get the model with the best set of hyperparameters found
+
+        Returns
+        -------
+            best_model (object): Object from the class model with
+                                    the best hyperparameters found.
+        """
         raise NotImplementedError(
             "Optimization modules must implement get_model method."
         )
 
     @abstractmethod
     def get_trials_values(self):
+        """
+        Get the trial values from the hyperparameter optimization process
+
+        Returns
+        -------
+            trial_values (list): List with the hyperparameters
+                                    values and the goal metric per trial.
+        """
         raise NotImplementedError(
             "Optimization modules must implement get_trials_values method."
         )
 
     def history_objective_plot(self, trials):
+        """
+        Plot for the goal metric achieved per trial.
+
+        Args:
+            trial_values (list): List with the hyperparameters values
+                                    and the goal metric per trial.
+
+        Returns
+        -------
+            fig (json): json with the plot data
+        """
         x = list(range(1, len(trials) + 1))
         y = [trial["value"] for trial in trials]
         max_cumulative = np.maximum.accumulate(y)
@@ -84,6 +111,18 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
         return plotly.io.to_json(fig)
 
     def slice_plot(self, trials):
+        """
+        Plot that compares the performance in the
+        search space of one hyperparameter.
+
+        Args:
+            trial_values (list): List with the hyperparameters
+                            values and the goal metric per trial.
+
+        Returns
+        -------
+            fig (json): json with the plot data
+        """
         param_names = list(trials[0]["params"].keys())
 
         traces = []
@@ -127,10 +166,8 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
                 }
             )
 
-        # Configuración del menú desplegable
         updatemenus = [{"buttons": buttons, "direction": "down", "showactive": True}]
 
-        # Crear la figura
         fig = go.Figure(data=traces)
         fig.update_layout(
             updatemenus=updatemenus,
@@ -139,10 +176,21 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             yaxis_title="Objective Value",
         )
 
-        # Mostrar la figura
         return plotly.io.to_json(fig)
 
     def contour_plot(self, trials):
+        """
+        Contour plot between two hyperparameters
+        and the goal metric achieved in the search space.
+
+        Args:
+            trial_values (list): List with the hyperparameters values
+                                and the goal metric per trial.
+
+        Returns
+        -------
+            fig (json): json with the plot data
+        """
         param_names = list(trials[0]["params"].keys())
         traces = []
         scatter_traces = []
@@ -194,7 +242,6 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
                     )
                     scatter_traces.append(scatter_trace)
 
-        # Show the first contour and scatter trace by default
         traces[0]["visible"] = True
         scatter_traces[0]["visible"] = True
 
@@ -226,6 +273,18 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
         return plotly.io.to_json(fig)
 
     def importance_plot(self, trials):
+        """
+        Plot to obtain the importance between all the hyperparameters
+        involved in hyperparameter optimization.
+
+        Args:
+            trial_values (list): List with the hyperparameters values
+                                and the goal metric per trial.
+
+        Returns
+        -------
+            fig (json): json with the plot data
+        """
         distributions = {}
         for param, (low, high) in self.parameters.items():
             if isinstance(low, int):
@@ -265,14 +324,27 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
             title="Hyperparameter importance",
             xaxis_title="Importance",
             yaxis_title="Hyperparameter",
-            yaxis={
-                "tickangle": 0
-            },  # Opcional: ajustar el ángulo de las etiquetas del eje y
+            yaxis={"tickangle": 0},
         )
 
         return plotly.io.to_json(fig)
 
     def create_plots(self, trials, run_id, n_params):
+        """
+        List of available plots.
+
+        Args:
+            trials (list): List with the hyperparameters values
+                            and the goal metric per trial.
+            run_id (int): Number with the id associated to the current run
+                            from the experiment.
+            n_params (int): Number of the different hyperparameters involved
+                            in the process of hyperparameter optimization
+
+        Returns
+        -------
+            fig (json): json with the plot data
+        """
         if n_params >= 2:
             plots_filenames = [
                 f"history_objective_plot_{run_id}.pickle",

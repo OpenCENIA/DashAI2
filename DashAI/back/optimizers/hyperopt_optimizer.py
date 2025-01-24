@@ -70,13 +70,15 @@ class HyperOptOptimizer(BaseOptimizer):
 
         Args:
             model (class): class for the model from the current experiment
-            dataset (dict): dict with the data to train and validation
+            input_dataset (dict): dict with train dataset
+            output_dataset (dict): dict with validation dataset
             parameters (dict): dict with the information to create the search space
             metric (class): class for the metric to optimize
+            task (string): Name of the current task
 
         Returns
         -------
-            best_model: Object from the class model with the best hyperparameters found.
+            None
         """
         self.model = model
         self.input_dataset = input_dataset

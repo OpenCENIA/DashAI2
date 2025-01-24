@@ -32,7 +32,7 @@ class OptunaSchema(BaseSchema):
         ". Must be in string format and can be 'scale' or 'auto'.",
     )  # type: ignore
     metric: schema_field(
-        enum_field(enum=["MAE", "RMSE"]),
+        enum_field(enum=["MAE", "RMSE", "Accuracy", "F1", "Precision", "Recall"]),
         placeholder="Accuracy",
         description="Coefficient for 'rbf', 'poly' and 'sigmoid' kernels."
         "Must be in string format and can be 'scale' or 'auto'.",

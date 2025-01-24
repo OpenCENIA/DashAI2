@@ -4,9 +4,11 @@ import os
 import pickle
 from typing import List
 
+import numpy as np
 from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
+from transformers import pipeline
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -143,39 +145,16 @@ class ModelJob(BaseJob):
                     f"Unable to find Model with name {run.model_name} in registry.",
                 ) from e
             try:
-                if experiment.task_name == "TextClassificationTask":
-                    run_fixed_parameters = {
-                        key: (
-                            parameter["fixed_value"]
-                            if isinstance(parameter, dict) and "optimize" in parameter
-                            else parameter
-                        )
-                        for key, parameter in run.parameters["tabular_classifier"][
-                            "properties"
-                        ]["params"]["comp"]["params"].items()
-                        if (
-                            isinstance(parameter, dict)
-                            and parameter.get("optimize") is False
-                        )
-                        or isinstance(parameter, (bool, str))
-                    }
-                    run_optimizable_parameters = {
-                        key: (parameter["lower_bound"], parameter["upper_bound"])
-                        for key, parameter in run.parameters["tabular_classifier"][
-                            "properties"
-                        ]["params"]["comp"]["params"].items()
-                        if (
-                            isinstance(parameter, dict)
-                            and parameter.get("optimize") is True
-                        )
-                    }
-                    submodel: BaseModel = component_registry[
-                        run.parameters["tabular_classifier"]["properties"]["params"][
-                            "comp"
-                        ]["component"]
-                    ]["class"](**run_fixed_parameters)
-                    model: BaseModel = run_model_class(submodel, **run.parameters)
+                run_optimizable_parameters = {}
+                if experiment.task_name == "TranslationTask":
+                    model: BaseModel = run_model_class(**run.parameters)
 
+                elif experiment.task_name == "TextClassificationTask":
+                    column_name = y["train"].column_names[0]
+                    num_labels = len(y["train"].unique(column_name))
+                    run.parameters["num_labels"] = num_labels
+                    print(f"Parametros de run  model {run.parameters}")
+                    model: BaseModel = run_model_class(**run.parameters)
                 else:
                     run_fixed_parameters = {
                         key: (
@@ -214,9 +193,21 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                run.optimizer_parameters["metric"] = selected_metrics[
-                    run.optimizer_parameters["metric"]
-                ]
+                default_metrics = {
+                    "TabularClassificationTask": "Accuracy",
+                    "TextClassificationTask": "Accuracy",
+                    "TranslationTask": "Bleu",
+                    "RegressionTask": "MAE",
+                }
+
+                if run.optimizer_parameters["metric"] == "auto":
+                    run.optimizer_parameters["metric"] = default_metrics[
+                        experiment.task_name
+                    ]
+                else:
+                    run.optimizer_parameters["metric"] = selected_metrics[
+                        run.optimizer_parameters["metric"]
+                    ]
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -301,6 +292,10 @@ class ModelJob(BaseJob):
 
             try:
                 run_path = os.path.join(config["RUNS_PATH"], str(run.id))
+                outputpred = model.predict(x["test"])
+                print(outputpred[:5])
+                print(np.argmax(outputpred[:5], axis=1))
+                print(y["test"]["class"][:5])
                 model.save(run_path)
             except Exception as e:
                 log.exception(e)

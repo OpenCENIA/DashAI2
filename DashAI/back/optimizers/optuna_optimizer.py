@@ -47,6 +47,7 @@ class OptunaOptimizer(BaseOptimizer):
         "TabularClassificationTask",
         "TextClassificationTask",
         "TranslationTask",
+        "RegressionTask",
     ]
 
     def __init__(self, n_trials=None, sampler=None, pruner=None):

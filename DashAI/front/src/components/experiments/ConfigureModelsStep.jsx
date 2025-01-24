@@ -53,7 +53,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         n_trials: 10,
         sampler: "TPESampler",
         pruner: "None",
-        metric: "Accuracy",
+        metric: "auto",
       },
     };
     setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });

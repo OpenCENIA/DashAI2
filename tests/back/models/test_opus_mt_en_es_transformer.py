@@ -1,11 +1,8 @@
 import io
 import os
-from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
-from datasets import Dataset, DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (

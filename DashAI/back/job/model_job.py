@@ -150,11 +150,40 @@ class ModelJob(BaseJob):
                     model: BaseModel = run_model_class(**run.parameters)
 
                 elif experiment.task_name == "TextClassificationTask":
-                    column_name = y["train"].column_names[0]
-                    num_labels = len(y["train"].unique(column_name))
-                    run.parameters["num_labels"] = num_labels
-                    print(f"Parametros de run  model {run.parameters}")
-                    model: BaseModel = run_model_class(**run.parameters)
+                    if run.model_name == "BagOfWordsTextClassificationModel":
+                        sub_model_name = run.parameters["tabular_classifier"][
+                            "properties"
+                        ]["params"]["comp"]["component"]
+                        sub_model = component_registry[sub_model_name]["class"]
+                        model_params = run.parameters["tabular_classifier"][
+                            "properties"
+                        ]["params"]["comp"]["params"]
+                        run_fixed_parameters = {
+                            key: (
+                                parameter["fixed_value"]
+                                if isinstance(parameter, dict)
+                                and "optimize" in parameter
+                                else parameter
+                            )
+                            for key, parameter in model_params.items()
+                            if (
+                                isinstance(parameter, dict)
+                                and parameter.get("optimize") is False
+                            )
+                            or isinstance(parameter, (bool, str))
+                        }
+
+                        model: BaseModel = run_model_class(
+                            sub_model=sub_model(**run_fixed_parameters),
+                            **run.parameters,
+                        )
+
+                    else:
+                        column_name = y["train"].column_names[0]
+                        num_labels = len(y["train"].unique(column_name))
+                        run.parameters["num_labels"] = num_labels
+                        print(f"Parametros de run  model {run.parameters}")
+                        model: BaseModel = run_model_class(**run.parameters)
                 else:
                     run_fixed_parameters = {
                         key: (

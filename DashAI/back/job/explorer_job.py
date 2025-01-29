@@ -115,6 +115,7 @@ class ExplorerJob(BaseJob):
         # Instance the explorer (the explorer handles its validation)
         try:
             explorer_instance = explorer_component_class(**explorer_info.parameters)
+            assert isinstance(explorer_instance, BaseExplorer)
         except Exception as e:
             log.exception(e)
             explorer_info.set_status_as_error()

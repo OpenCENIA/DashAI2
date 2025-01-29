@@ -42,10 +42,20 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   const handleAddButton = () => {
-    // sets the default values of the newly added model, making optional the parameter configuration
+    // Calcular el número de modelos existentes del mismo tipo
+    const existingModelsOfType = newExp.runs.filter(
+      (run) => run.model === selectedModel,
+    ).length;
+
+    // Generar nombre automático si no se ingresó uno
+    const modelName =
+      name.trim() === ""
+        ? `${selectedModel}_${existingModelsOfType + 1}`
+        : name;
+
     const newModel = {
       id: uuid(),
-      name,
+      name: modelName,
       model: selectedModel,
       params: defaultValues,
       optimizer_name: "OptunaOptimizer",
@@ -56,6 +66,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         metric: "auto",
       },
     };
+
     setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });
     setName("");
     setSelectedModel("");
@@ -97,7 +108,12 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
               label="Name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder={
+                selectedModel ? `Ej: ${selectedModel}_1` : "Ej: Modelo_1"
+              }
               fullWidth
+              key={selectedModel}
+              InputLabelProps={{ shrink: true }}
             />
           </Grid>
 

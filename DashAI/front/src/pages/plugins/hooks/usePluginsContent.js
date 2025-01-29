@@ -56,7 +56,7 @@ export default function usePluginsContent({ plugins }) {
 
   useEffect(() => {
     filterPlugins();
-  }, [searchField, type, sortBy]);
+  }, [plugins, searchField, type, sortBy]);
 
   return {
     pluginsToShow,

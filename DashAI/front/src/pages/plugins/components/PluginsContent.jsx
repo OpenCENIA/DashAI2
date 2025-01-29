@@ -12,6 +12,7 @@ import CircularProgress from "@mui/material/CircularProgress";
  * @param {string[]} pluginTags
  * @param {boolean} refreshPluginsFlag
  * @param {function} setRefreshPluginsFlag
+ * @param {boolean} loading
  * @returns
  */
 function PluginsContent({
@@ -87,7 +88,7 @@ function PluginsContent({
       )}
 
       {/* Plugins Grid */}
-      {!loading && pluginsToShow.length && (
+      {!loading && !!pluginsToShow.length && (
         <Grid container spacing={cardView ? 4 : 2}>
           {pluginsToShow.map((plugin, i) => (
             <Grid

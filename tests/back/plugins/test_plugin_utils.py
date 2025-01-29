@@ -206,10 +206,10 @@ def test_error_execute_pip_command():
     subprocess_mock = Mock()
     subprocess_mock.returncode = 1
     subprocess_mock.stderr = "ERROR: ...\nERROR: ..."
-    with patch("subprocess.run", return_value=subprocess_mock), pytest.raises(
-        RuntimeError, match="ERROR: ...\nERROR: ..."
-    ):
-        execute_pip_command("dashai-tabular-classification-package", "install")
+
+    with patch("subprocess.run", return_value=subprocess_mock):  # noqa: SIM117
+        with pytest.raises(RuntimeError, match="ERROR: ...\nERROR: ..."):
+            execute_pip_command("dashai-tabular-classification-package", "install")
 
 
 def test_execute_incorrect_pip_command():
@@ -234,10 +234,11 @@ def test_uninstall_plugin():
     execute_pip_command_mock = Mock()
     execute_pip_command_mock.return_value = 0
 
-    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock), patch(
-        "DashAI.back.plugins.utils.execute_pip_command", execute_pip_command_mock
-    ):
-        uninsalled_plugins = uninstall_plugin("Plugin1")
+    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock):  # noqa: SIM117
+        with patch(
+            "DashAI.back.plugins.utils.execute_pip_command", execute_pip_command_mock
+        ):
+            uninsalled_plugins = uninstall_plugin("Plugin1")
 
     assert uninsalled_plugins == {DummyComponent1}
     assert execute_pip_command_mock.call_count == 1

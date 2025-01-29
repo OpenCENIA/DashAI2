@@ -16,7 +16,6 @@ export default function usePlugins({ onSettled, refresh = false }) {
   const { enqueueSnackbar } = useSnackbar();
 
   const getPlugins = async () => {
-    setLoading(true);
     try {
       const plugins = await getPluginsRequest();
       setPluginsBrowse(
@@ -41,6 +40,7 @@ export default function usePlugins({ onSettled, refresh = false }) {
 
   useEffect(() => {
     if (refresh) {
+      setLoading(true);
       getPlugins();
     }
   }, [refresh]);

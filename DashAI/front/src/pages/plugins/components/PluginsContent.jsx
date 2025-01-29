@@ -53,7 +53,7 @@ function PluginsContent({
         pluginTags={pluginTags}
       />
 
-      {/* Simbolo de loading */}
+      {/* Loading */}
       {loading && (
         <Grid item xs={12} height={"218px"}>
           <Card
@@ -80,7 +80,9 @@ function PluginsContent({
               alignItems: "center",
             }}
           >
-            <Typography variant="body1">No plugins to show</Typography>
+            <Typography variant="body1">
+              No plugins to show (try refreshing)
+            </Typography>
           </Card>
         </Grid>
       )}

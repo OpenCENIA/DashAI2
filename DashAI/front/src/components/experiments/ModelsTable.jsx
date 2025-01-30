@@ -75,33 +75,19 @@ function ModelsTable({ newExp, setNewExp }) {
       {
         field: "name",
         headerName: "Name",
-        minWidth: 450,
+        flex: 1, // This makes the column take available space proportionally
         editable: false,
       },
       {
         field: "model",
         headerName: "Model",
-        minWidth: 450,
+        flex: 1, // Ensures it resizes properly
         editable: false,
-      },
-      {
-        field: "metric",
-        headerName: "Select Metric",
-        minWidth: 300,
-        renderCell: (params) => (
-          <ModelsTableSelectMetric
-            taskName={newExp.task_name}
-            metricName={selectedMetric[params.row.id]}
-            handleSelectedMetric={(metricName) =>
-              handleSelectedMetric(metricName, params.row.id)
-            }
-          />
-        ),
       },
       {
         field: "actions",
         type: "actions",
-        minWidth: 100,
+        flex: 0.5, // Less space needed since it's just buttons
         getActions: (params) => [
           <EditModelDialog
             key="edit-component"
@@ -114,6 +100,20 @@ function ModelsTable({ newExp, setNewExp }) {
             deleteFromTable={() => handleDeleteModel(params.id)}
           />,
         ],
+      },
+      {
+        field: "metric",
+        headerName: "Optimization Metric (Optional)",
+        flex: 1, // Since it's a dropdown, give it more space
+        renderCell: (params) => (
+          <ModelsTableSelectMetric
+            taskName={newExp.task_name}
+            metricName={selectedMetric[params.row.id]}
+            handleSelectedMetric={(metricName) =>
+              handleSelectedMetric(metricName, params.row.id)
+            }
+          />
+        ),
       },
     ],
     [handleDeleteModel],

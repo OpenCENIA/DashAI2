@@ -20,7 +20,7 @@ function ModelsTableSelectMetric({
     <>
       <TextField
         select
-        label="Select the goal metric"
+        label="Goal metric for optimization"
         value={selectedMetric || ""}
         onChange={handleChange}
         fullWidth

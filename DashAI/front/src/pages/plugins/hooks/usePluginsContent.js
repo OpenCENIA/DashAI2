@@ -51,8 +51,12 @@ export default function usePluginsContent({ plugins }) {
   }
 
   useEffect(() => {
+    setPluginsToShow(plugins);
+  }, [plugins]);
+
+  useEffect(() => {
     filterPlugins();
-  }, [searchField, type, sortBy]);
+  }, [plugins, searchField, type, sortBy]);
 
   return {
     pluginsToShow,

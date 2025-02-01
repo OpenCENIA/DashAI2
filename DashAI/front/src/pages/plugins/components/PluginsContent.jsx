@@ -4,6 +4,7 @@ import PropTypes from "prop-types";
 import { Grid, Typography, Card } from "@mui/material";
 import PluginCard from "./PluginsCard";
 import usePluginsContent from "../hooks/usePluginsContent";
+import CircularProgress from "@mui/material/CircularProgress";
 
 /**
  * component to render tab content: toolbar and plugins grid
@@ -11,6 +12,7 @@ import usePluginsContent from "../hooks/usePluginsContent";
  * @param {string[]} pluginTags
  * @param {boolean} refreshPluginsFlag
  * @param {function} setRefreshPluginsFlag
+ * @param {boolean} loading
  * @returns
  */
 function PluginsContent({
@@ -18,6 +20,7 @@ function PluginsContent({
   pluginTags,
   refreshPluginsFlag,
   setRefreshPluginsFlag,
+  loading,
 }) {
   const {
     pluginsToShow,
@@ -50,8 +53,8 @@ function PluginsContent({
         pluginTags={pluginTags}
       />
 
-      {/* No plugins */}
-      {!pluginsToShow.length && (
+      {/* Loading */}
+      {loading && (
         <Grid item xs={12} height={"218px"}>
           <Card
             sx={{
@@ -61,13 +64,31 @@ function PluginsContent({
               alignItems: "center",
             }}
           >
-            <Typography variant="body1">No plugins to show</Typography>
+            <CircularProgress />
+          </Card>
+        </Grid>
+      )}
+
+      {/* No plugins */}
+      {!loading && !pluginsToShow.length && (
+        <Grid item xs={12} height={"218px"}>
+          <Card
+            sx={{
+              height: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body1">
+              No plugins to show (try refreshing)
+            </Typography>
           </Card>
         </Grid>
       )}
 
       {/* Plugins Grid */}
-      {!!pluginsToShow.length && (
+      {!loading && !!pluginsToShow.length && (
         <Grid container spacing={cardView ? 4 : 2}>
           {pluginsToShow.map((plugin, i) => (
             <Grid

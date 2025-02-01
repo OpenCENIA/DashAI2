@@ -1,6 +1,5 @@
 from DashAI.back.dataloaders import CSVDataLoader, ImageDataLoader, JSONDataLoader
 from DashAI.back.explainability import (
-    FitKernelShap,
     KernelShap,
     PartialDependence,
     PermutationFeatureImportance,
@@ -66,8 +65,6 @@ def get_initial_components(container_type):
             KernelShap,
             PartialDependence,
             PermutationFeatureImportance,
-            # Explainers Fit Schema
-            FitKernelShap,
         ]
     elif container_type == "plugins":
         installed_plugins = get_available_plugins()
@@ -79,8 +76,6 @@ def get_initial_components(container_type):
             KernelShap,
             PartialDependence,
             PermutationFeatureImportance,
-            # Explainers Fit Schema
-            FitKernelShap,
         ]
         return installed_plugins + basic_components
     else:

@@ -33,12 +33,16 @@ class DummyComponent2(DummyBaseComponent):
 
 def test_get_all_plugins_with_proxy():
     mock_client = Mock()
-    mock_client.list_packages.return_value = [
-        "DashAI",
-        "dashai-tabular-classification-package",
-        "scikit-learn",
-    ]
-    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
+    mock_client.json.return_value = {
+        "meta": {"_last-serial": 0, "api-version": "1.0"},
+        "projects": [
+            {"_last-serial": 0, "name": "DashAI"},
+            {"_last-serial": 1, "name": "dashai-tabular-classification-package"},
+            {"_last-serial": 2, "name": "scikit-learn"},
+        ],
+    }
+    mock_client.status_code = 200
+    with patch("requests.get") as MockServerProxy:
         MockServerProxy.return_value = mock_client
         packages = _get_all_plugins()
 
@@ -122,12 +126,15 @@ def test_get_plugin_by_name_from_pypi_with_other_tags():
 def test_get_plugins_from_pypi():
     # Mock to server_proxy
     server_proxy_mock = Mock()
-    server_proxy_mock.list_packages.return_value = [
-        "image-classification-package",
-        "dashai-tabular-classification-package",
-        "scikit-dashai-learn",
-    ]
-
+    server_proxy_mock.json.return_value = {
+        "meta": {"_last-serial": 0, "api-version": "1.0"},
+        "projects": [
+            {"_last-serial": 0, "name": "image-classification-package"},
+            {"_last-serial": 1, "name": "dashai-tabular-classification-package"},
+            {"_last-serial": 2, "name": "scikit-dashai-learn"},
+        ],
+    }
+    server_proxy_mock.status_code = 200
     # Mock to request.get
     request_mock = Mock()
     json_return = {
@@ -143,10 +150,8 @@ def test_get_plugins_from_pypi():
     }
     request_mock.json.return_value = json_return
 
-    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
-        MockServerProxy.return_value = server_proxy_mock
-        with patch("requests.get", return_value=request_mock):
-            plugins = get_plugins_from_pypi()
+    with patch("requests.get", side_effect=[server_proxy_mock, request_mock]):
+        plugins = get_plugins_from_pypi()
 
     assert plugins == [
         {
@@ -201,10 +206,10 @@ def test_error_execute_pip_command():
     subprocess_mock = Mock()
     subprocess_mock.returncode = 1
     subprocess_mock.stderr = "ERROR: ...\nERROR: ..."
-    with patch("subprocess.run", return_value=subprocess_mock), pytest.raises(
-        RuntimeError, match="ERROR: ...\nERROR: ..."
-    ):
-        execute_pip_command("dashai-tabular-classification-package", "install")
+
+    with patch("subprocess.run", return_value=subprocess_mock):  # noqa: SIM117
+        with pytest.raises(RuntimeError, match="ERROR: ...\nERROR: ..."):
+            execute_pip_command("dashai-tabular-classification-package", "install")
 
 
 def test_execute_incorrect_pip_command():
@@ -229,10 +234,11 @@ def test_uninstall_plugin():
     execute_pip_command_mock = Mock()
     execute_pip_command_mock.return_value = 0
 
-    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock), patch(
-        "DashAI.back.plugins.utils.execute_pip_command", execute_pip_command_mock
-    ):
-        uninsalled_plugins = uninstall_plugin("Plugin1")
+    with patch("DashAI.back.plugins.utils.entry_points", entry_points_mock):  # noqa: SIM117
+        with patch(
+            "DashAI.back.plugins.utils.execute_pip_command", execute_pip_command_mock
+        ):
+            uninsalled_plugins = uninstall_plugin("Plugin1")
 
     assert uninsalled_plugins == {DummyComponent1}
     assert execute_pip_command_mock.call_count == 1

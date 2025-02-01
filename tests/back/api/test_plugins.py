@@ -25,15 +25,19 @@ def test_post_plugin(client: TestClient):
 
 
 def test_refresh_plugins(client: TestClient):
-    # Mock to server_proxy
-    server_proxy_mock = Mock()
-    server_proxy_mock.list_packages.return_value = [
-        "image-classification-package",
-        "dashai-tabular-classification-package",
-        "scikit-dashai-learn",
-    ]
+    # Mock para requests.get
+    mock_client = Mock()
+    mock_client.json.return_value = {
+        "meta": {"_last-serial": 0, "api-version": "1.0"},
+        "projects": [
+            {"_last-serial": 0, "name": "image-classification-package"},
+            {"_last-serial": 1, "name": "dashai-tabular-classification-package"},
+            {"_last-serial": 2, "name": "scikit-dashai-learn"},
+        ],
+    }
+    mock_client.status_code = 200
 
-    # Mock to request.get
+    # Mock para el segundo request.get
     request_mock = Mock()
     json_return = {
         "info": {
@@ -48,12 +52,10 @@ def test_refresh_plugins(client: TestClient):
     }
     request_mock.json.return_value = json_return
 
-    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
-        MockServerProxy.return_value = server_proxy_mock
-        with patch("requests.get", return_value=request_mock):
-            response = client.post("/api/v1/plugin/index")
-            assert response.status_code == 201, response.text
-            assert len(response.json()) == 1
+    with patch("requests.get", side_effect=[mock_client, request_mock]):
+        response = client.post("/api/v1/plugin/index")
+        assert response.status_code == 201, response.text
+        assert len(response.json()) == 1
 
 
 def test_post_existing_plugin(client: TestClient):
@@ -80,15 +82,19 @@ def test_post_existing_plugin(client: TestClient):
 
 
 def test_refresh_existing_plugin_with_new_version(client: TestClient):
-    # Mock to server_proxy
-    server_proxy_mock = Mock()
-    server_proxy_mock.list_packages.return_value = [
-        "image-classification-package",
-        "dashai-tabular-classification-package",
-        "scikit-dashai-learn",
-    ]
+    # Mock para requests.get
+    mock_client = Mock()
+    mock_client.json.return_value = {
+        "meta": {"_last-serial": 0, "api-version": "1.0"},
+        "projects": [
+            {"_last-serial": 0, "name": "image-classification-package"},
+            {"_last-serial": 1, "name": "dashai-tabular-classification-package"},
+            {"_last-serial": 2, "name": "scikit-dashai-learn"},
+        ],
+    }
+    mock_client.status_code = 200
 
-    # Mock to request.get
+    # Mock para el segundo request.get
     request_mock = Mock()
     json_return = {
         "info": {
@@ -103,17 +109,15 @@ def test_refresh_existing_plugin_with_new_version(client: TestClient):
     }
     request_mock.json.return_value = json_return
 
-    with patch("xmlrpc.client.ServerProxy") as MockServerProxy:
-        MockServerProxy.return_value = server_proxy_mock
-        with patch("requests.get", return_value=request_mock):
-            response = client.post("/api/v1/plugin/index")
-            assert response.status_code == 201, response.text
-            assert len(response.json()) == 1
-            plugin = response.json()[0]
-            assert plugin["name"] == "dashai-tabular-classification-package"
-            assert plugin["summary"] == "Tabular Classification Package"
-            assert plugin["installed_version"] == "0.0.2"
-            assert plugin["lastest_version"] == "0.0.5"
+    with patch("requests.get", side_effect=[mock_client, request_mock]):
+        response = client.post("/api/v1/plugin/index")
+        assert response.status_code == 201, response.text
+        assert len(response.json()) == 1
+        plugin = response.json()[0]
+        assert plugin["name"] == "dashai-tabular-classification-package"
+        assert plugin["summary"] == "Tabular Classification Package"
+        assert plugin["installed_version"] == "0.0.2"
+        assert plugin["lastest_version"] == "0.0.5"
 
 
 def test_get_all_plugins(client: TestClient):

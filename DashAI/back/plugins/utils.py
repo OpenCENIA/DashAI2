@@ -58,15 +58,30 @@ def get_plugin_by_name_from_pypi(plugin_name: str) -> dict:
     -------
     dict
         A dictionary with the plugin data
+
+    Raises
+    ------
+    ValueError
+        When the plugin is not found or the response is invalid
     """
     response: requests.Response = requests.get(
         f"https://pypi.org/pypi/{plugin_name}/json"
     )
 
-    raw_plugin: json = response.json()["info"]
-    keywords: list = raw_plugin.pop("keywords").split(",")
+    response_data = response.json()
+    try:
+        raw_plugin: json = response_data["info"]
+    except KeyError as err:
+        raise ValueError(
+            f"No se pudo obtener la información del plugin '{plugin_name}'."
+            f"Respuesta del servidor: {str(response_data)}."
+        ) from err
 
-    keywords = [keyword.strip() for keyword in keywords]
+    try:
+        keywords: list = raw_plugin.pop("keywords", "").split(",")
+        keywords = [keyword.strip() for keyword in keywords if keyword.strip()]
+    except AttributeError:
+        keywords = []
 
     # remove keywords that are not tags
     posible_tags = [tag.value for tag in PluginTag]
@@ -94,12 +109,22 @@ def get_plugins_from_pypi() -> List[dict]:
     List[dict]
         A list with the information of all DashAI plugins, extracted from PyPI.
     """
+    plugins = []
     plugins_names = [
         plugin_name.lower()
         for plugin_name in _get_all_plugins()
         if plugin_name.lower().startswith("dashai") and plugin_name.lower() != "dashai"
     ]
-    return [get_plugin_by_name_from_pypi(plugin_name) for plugin_name in plugins_names]
+
+    for plugin_name in plugins_names:
+        try:
+            plugin_info = get_plugin_by_name_from_pypi(plugin_name)
+            plugins.append(plugin_info)
+        except ValueError as e:
+            print(f"Error al obtener información del plugin {plugin_name}: {str(e)}")
+            continue
+
+    return plugins
 
 
 def get_available_plugins() -> List[type]:

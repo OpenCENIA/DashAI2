@@ -11,13 +11,27 @@ function ArrayInput({
   onChange,
   error,
   description,
+  itemType,
   ...props
 }) {
   const [inputValue, setInputValue] = useState(value.join(","));
+
+  const convertValue = (val) => {
+    switch (itemType) {
+      case "integer":
+        return parseInt(val);
+      case "number":
+        return parseFloat(val);
+      default:
+        return val;
+    }
+  };
   const handleChange = (newValue) => {
     const arrayValue = newValue.split(",");
     setInputValue(arrayValue);
-    const removeEmpty = arrayValue.filter((item) => item !== "");
+    const removeEmpty = arrayValue
+      .filter((item) => item !== "")
+      .map((item) => convertValue(item));
     onChange(removeEmpty);
   };
 
@@ -47,6 +61,7 @@ ArrayInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   description: PropTypes.string.isRequired,
   error: PropTypes.string,
+  itemType: PropTypes.string,
 };
 
 ArrayInput.defaultProps = {

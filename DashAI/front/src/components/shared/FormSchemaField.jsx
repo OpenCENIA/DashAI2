@@ -57,9 +57,15 @@ function FormSchemaField({ objName, paramJsonSchema, field, error }) {
     case "boolean":
       return <BooleanInput {...commonProps} />;
     case "array":
-      return <ArrayInput {...commonProps} />;
+      return (
+        <ArrayInput
+          {...commonProps}
+          itemType={paramJsonSchema.items?.type || "string"}
+        />
+      );
     case "null" || "undefined":
       return <TextInput {...commonProps} disabled />;
+
     default:
       return null;
   }

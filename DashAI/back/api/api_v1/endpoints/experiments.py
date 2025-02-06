@@ -12,7 +12,6 @@ from DashAI.back.api.api_v1.schemas.experiments_params import (
     ExperimentParams,
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import (
-    DashAIDataset,
     get_column_names_from_indexes,
     load_dataset,
 )
@@ -110,17 +109,17 @@ async def validate_columns(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Dataset not found",
                 )
-            dataset = load_dataset(f"{dataset.file_path}/dataset")
-            if dataset.is_empty():
+            datasetdict = load_dataset(f"{dataset.file_path}/dataset")
+            if not datasetdict:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail="Error while loading the dataset.",
                 )
             inputs_names = get_column_names_from_indexes(
-                dataset=dataset, indexes=params.inputs_columns
+                datasetdict=datasetdict, indexes=params.inputs_columns
             )
             outputs_names = get_column_names_from_indexes(
-                dataset=dataset, indexes=params.outputs_columns
+                datasetdict=datasetdict, indexes=params.outputs_columns
             )
 
         except exc.SQLAlchemyError as e:
@@ -138,7 +137,7 @@ async def validate_columns(
     validation_response = {}
     try:
         prepared_dataset = task.prepare_for_task(
-            datasetdict=dataset,
+            datasetdict=datasetdict,
             outputs_columns=outputs_names,
         )
         task.validate_dataset_for_task(

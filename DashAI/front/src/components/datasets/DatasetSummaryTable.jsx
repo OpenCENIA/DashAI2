@@ -31,7 +31,8 @@ function DatasetSummaryTable({
           id: idx,
           columnName: name,
           example: dataset[name][0],
-          dataType: types[name],
+          columnType: types[name].type,
+          dataType: types[name].dtype,
         };
       });
       setRows(rowsArray);
@@ -99,6 +100,14 @@ function DatasetSummaryTable({
       headerName: "Example",
       minWidth: 200,
       editable: false,
+    },
+    {
+      field: "columnType",
+      headerName: "Column type",
+      renderEditCell: (params) =>
+        isEditable && renderSelectCell(params, columnTypesList),
+      minWidth: 200,
+      editable: isEditable,
     },
     {
       field: "dataType",

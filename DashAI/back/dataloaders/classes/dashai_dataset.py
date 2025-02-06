@@ -6,7 +6,6 @@ import pathlib
 from typing import Dict, List, Literal, Tuple, Union
 
 import numpy as np
-import polars as pl
 import pyarrow as pa
 from beartype import beartype
 from datasets import (
@@ -18,30 +17,70 @@ from datasets import (
     load_from_disk,
 )
 from datasets.table import Table
-from polars import DataFrame
 from sklearn.model_selection import train_test_split
 
 
-class DashAIDataset(DataFrame):
+class DashAIDataset(Dataset):
     """DashAI dataset wrapper for Huggingface datasets with extra metadata."""
 
     @beartype
-    def __init__(self, df: DataFrame):
-        self.df = df
-        self.metadata = {}
+    def __init__(
+        self,
+        table: Table,
+        *args,
+        **kwargs,
+    ):
+        """Initialize a new instance of a DashAI dataset.
 
-    @classmethod
-    def load(cls, path: Union[str, pathlib.Path]) -> "DashAIDataset":
-        """Load dataset from Parquet file"""
-        df = pl.read_parquet(path)
-        return cls(df)
+        Parameters
+        ----------
+        table : Table
+            Arrow table from which the dataset will be created
+        """
+        super().__init__(table, *args, **kwargs)
 
-    def save_to_disk(self, path: Union[str, pathlib.Path]) -> None:
-        """Save dataset to Parquet file"""
-        self.df.write_parquet(path)
+    @beartype
+    def cast(self, *args, **kwargs) -> "DashAIDataset":
+        """Override of the cast method to leave it in DashAI dataset format.
 
+        Returns
+        -------
+        DatasetDashAI
+            Dataset after cast
+        """
+        ds = super().cast(*args, **kwargs)
+        return DashAIDataset(ds._data)
+
+    @beartype
+    def save_to_disk(self, dataset_path: str) -> None:
+        """Saves a dataset to a dataset directory, or in a filesystem.
+
+        Overwrite the original method to include the input and output columns.
+
+        Parameters
+        ----------
+        dataset_path : str
+            path where the dataset will be stored
+        """
+        super().save_to_disk(dataset_path)
+
+    @beartype
     def change_columns_type(self, column_types: Dict[str, str]) -> "DashAIDataset":
-        """Change column types"""
+        """Change the type of some columns.
+
+        Note: this is a temporal method, and it will probably will delete in the future.
+
+        Parameters
+        ----------
+        column_types : Dict[str, str]
+            dictionary whose keys are the names of the columns to be changed and the
+            values the new types.
+
+        Returns
+        -------
+        DashAIDataset
+            The dataset after columns type changes.
+        """
         if not isinstance(column_types, dict):
             raise TypeError(f"types should be a dict, got {type(column_types)}")
 
@@ -53,47 +92,163 @@ class DashAIDataset(DataFrame):
                     f"Error while changing column types: column '{column}' does not "
                     "exist in dataset."
                 )
+        new_features = self.features.copy()
+        for column in column_types:
+            if column_types[column] == "Categorical":
+                names = list(set(self[column]))
+                new_features[column] = ClassLabel(names=names)
+            elif column_types[column] == "Numerical":
+                new_features[column] = Value("float32")
+        dataset = self.cast(new_features)
+        return dataset
 
-        new_df = self.df.clone()
-        for col, dtype in column_types.items():
-            if dtype == "Categorical":
-                new_df = new_df.with_columns(pl.col(col).cast(pl.Categorical))
-            elif dtype == "Numerical":
-                new_df = new_df.with_columns(pl.col(col).cast(pl.Float32))
-        return DashAIDataset(new_df)
+    @beartype
+    def remove_columns(self, column_names: Union[str, List[str]]) -> "DashAIDataset":
+        """Remove one or several column(s) in the dataset and the features
+        associated to them.
 
-    def remove_columns(self, columns: Union[str, List[str]]) -> "DashAIDataset":
-        """Remove specified columns"""
-        return DashAIDataset(self.df.drop(columns))
+        Parameters
+        ----------
+        column_names : Union[str, List[str]]
+            Name, or list of names of columns to be removed.
 
+        Returns
+        -------
+        DashAIDataset
+            The dataset after columns removal.
+        """
+        if isinstance(column_names, str):
+            column_names = [column_names]
+
+        # Remove column from features
+        modified_dataset = super().remove_columns(column_names)
+        # Update self with modified dataset attributes
+        self.__dict__.update(modified_dataset.__dict__)
+
+        return self
+
+    @beartype
     def sample(
         self,
         n: int = 1,
         method: Literal["head", "tail", "random"] = "head",
         seed: Union[int, None] = None,
-    ) -> Dict:
-        """Return sample rows"""
+    ) -> Dict[str, List]:
+        """Return sample rows from dataset.
+
+        Parameters
+        ----------
+        n : int
+            number of samples to return.
+        method: Literal[str]
+            method for selecting samples. Possible values are: 'head' to
+            select the first n samples, 'tail' to select the last n samples
+            and 'random' to select n random samples.
+        seed : int, optional
+            seed for random number generator when using 'random' method.
+
+        Returns
+        -------
+        Dict
+            A dictionary with selected samples.
+        """
+        if n > len(self):
+            raise ValueError(
+                "Number of samples must be less than or equal to the length "
+                f"of the dataset. Number of samples: {n}, "
+                f"dataset length: {len(self)}"
+            )
+
         if method == "random":
-            sample = self.df.sample(n, seed=seed).to_dict(as_series=False)
+            rng = np.random.default_rng(seed=seed)
+            indexes = rng.integers(low=0, high=(len(self) - 1), size=n)
+            sample = self.select(indexes).to_dict()
+
         elif method == "head":
-            sample = self.df.head(n).to_dict(as_series=False)
+            sample = self[:n]
+
         elif method == "tail":
-            sample = self.df.tail(n).to_dict(as_series=False)
+            sample = self[-n:]
+
         return sample
 
-    def __getattr__(self, name):
-        """Delegate attribute access to the underlying DataFrame"""
-        return getattr(self.df, name)
+
+@beartype
+def load_dataset(dataset_path: str) -> DatasetDict:
+    """Load a DashAI dataset from its path.
+
+         This process cast each split into a DashAIdataset object.
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path where the dataset is stored.
+
+    Returns
+    -------
+    DatasetDict
+        The loaded dataset.
+    """
+    dataset = load_from_disk(dataset_path=dataset_path)
+
+    for split in dataset:
+        dataset[split] = DashAIDataset(dataset[split].data)
+
+    return dataset
 
 
-def load_dataset(path: Union[str, pathlib.Path]) -> DashAIDataset:
-    """Load dataset"""
-    return DashAIDataset.load(path)
+@beartype
+def save_dataset(datasetdict: DatasetDict, path: Union[str, pathlib.Path]) -> None:
+    """Save the datasetdict with dashaidatasets inside.
+
+    Parameters
+    ----------
+    datasetdict : DatasetDict
+        The dataset to be saved.
+
+    datasetdict_path : str
+        Path where the dtaaset will be stored.
+
+    """
+    splits = []
+    for split in datasetdict:
+        splits.append(split)
+        datasetdict[split].save_to_disk(f"{path}/{split}")
+
+    with open(
+        os.path.join(path, "dataset_dict.json"), "w", encoding="utf-8"
+    ) as datasetdict_info_file:
+        data = {"splits": splits}
+        json.dump(
+            data,
+            datasetdict_info_file,
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+        )
 
 
-def save_dataset(dataset: DashAIDataset, path: Union[str, pathlib.Path]) -> None:
-    """Save dataset"""
-    dataset.save_to_disk(path)
+@beartype
+def check_split_values(
+    train_size: float,
+    test_size: float,
+    val_size: float,
+) -> None:
+    if train_size < 0 or train_size > 1:
+        raise ValueError(
+            "train_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+    if test_size < 0 or test_size > 1:
+        raise ValueError(
+            "test_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
+    if val_size < 0 or val_size > 1:
+        raise ValueError(
+            "val_size should be in the (0, 1) range "
+            f"(0 and 1 not included), got {val_size}"
+        )
 
 
 @beartype
@@ -167,33 +322,59 @@ def split_indexes(
     return list(train_indexes), list(test_indexes), list(val_indexes)
 
 
+@beartype
 def split_dataset(
-    dataset: DashAIDataset,
-    train_size: float,
-    test_size: float,
-    val_size: float,
-    seed: Union[int, None] = None,
-    shuffle: bool = True,
-) -> Dict[str, DashAIDataset]:
-    """Split dataset into train/test/validation"""
-    df = dataset.df
-    indexes = df.to_series().to_list()
+    dataset: Dataset,
+    train_indexes: List,
+    test_indexes: List,
+    val_indexes: List,
+) -> DatasetDict:
+    """Split the dataset in train, test and validation subsets.
 
-    # Split indexes
-    train_idx, temp_idx = train_test_split(
-        indexes, train_size=train_size, random_state=seed, shuffle=shuffle
+    Parameters
+    ----------
+    dataset : DatasetDict
+        A HuggingFace DatasetDict containing the dataset to be split.
+    train_indexes : List
+        Train split indexes.
+    test_indexes : List
+        Test split indexes.
+    val_indexes : List
+        Validation split indexes.
+
+
+    Returns
+    -------
+    DatasetDict
+        The split dataset.
+    """
+
+    # Get the number of records
+    n = len(dataset)
+
+    # Convert the indexes into boolean masks
+    train_mask = np.isin(np.arange(n), train_indexes)
+    test_mask = np.isin(np.arange(n), test_indexes)
+    val_mask = np.isin(np.arange(n), val_indexes)
+
+    # Get the underlying table
+    table = dataset.data
+
+    # Create separate tables for each split
+    train_table = table.filter(pa.array(train_mask))
+    test_table = table.filter(pa.array(test_mask))
+    val_table = table.filter(pa.array(val_mask))
+
+    separate_dataset_dict = DatasetDict(
+        {
+            "train": Dataset(train_table),
+            "test": Dataset(test_table),
+            "validation": Dataset(val_table),
+        }
     )
 
-    test_val_size = test_size + val_size
-    test_idx, val_idx = train_test_split(
-        temp_idx, test_size=val_size / test_val_size, random_state=seed, shuffle=shuffle
-    )
-
-    return {
-        "train": DashAIDataset(df[train_idx]),
-        "test": DashAIDataset(df[test_idx]),
-        "validation": DashAIDataset(df[val_idx]),
-    }
+    dataset = to_dashai_dataset(separate_dataset_dict)
+    return dataset
 
 
 def to_dashai_dataset(dataset: DatasetDict) -> DatasetDict:
@@ -205,15 +386,14 @@ def to_dashai_dataset(dataset: DatasetDict) -> DatasetDict:
     DatasetDict:
         Datasetdict with datasets converted to DashAIDataset.
     """
-    print(dataset["train"].features)
-    dataset = DashAIDataset(dataset["train"].to_polars())
-    print(dataset.schema)
+    for key in dataset:
+        dataset[key] = DashAIDataset(dataset[key].data)
     return dataset
 
 
 @beartype
 def validate_inputs_outputs(
-    dataset: DashAIDataset,
+    datasetdict: DatasetDict,
     inputs: List[str],
     outputs: List[str],
 ) -> None:
@@ -229,7 +409,7 @@ def validate_inputs_outputs(
     outputs : List[str]
         List of output column names.
     """
-    dataset_features = list(dataset.df.columns)
+    dataset_features = list((datasetdict["train"].features).keys())
     if len(inputs) == 0 or len(outputs) == 0:
         raise ValueError(
             "Inputs and outputs columns lists to validate must not be empty"
@@ -252,7 +432,7 @@ def validate_inputs_outputs(
 
 @beartype
 def get_column_names_from_indexes(
-    dataset: DashAIDataset, indexes: List[int]
+    datasetdict: DatasetDict, indexes: List[int]
 ) -> List[str]:
     """Obtain the column labels that correspond to the provided indexes.
 
@@ -271,7 +451,7 @@ def get_column_names_from_indexes(
         List with the labels of the columns
     """
 
-    dataset_features = list(dataset.df.columns)
+    dataset_features = list((datasetdict["train"].features).keys())
     col_names = []
     for index in indexes:
         if index > len(dataset_features):
@@ -286,16 +466,14 @@ def get_column_names_from_indexes(
 
 @beartype
 def select_columns(
-    dataset: DashAIDataset,
-    input_columns: List[str],
-    output_columns: List[str],
-) -> Tuple[DashAIDataset, DashAIDataset]:
+    dataset: DatasetDict, input_columns: List[str], output_columns: List[str]
+) -> Tuple[DatasetDict, DatasetDict]:
     """Divide the dataset into a dataset with only the input columns in it
     and other dataset only with the output columns
 
     Parameters
     ----------
-    dataset : DashAIDataset
+    dataset : DatasetDict
         Dataset to divide
     input_columns : List[str]
         List with the input columns labels
@@ -304,16 +482,19 @@ def select_columns(
 
     Returns
     -------
-    Tuple[DashAIDataset, DashAIDataset]
-        Tuple with the separated DashAIDataset x and y
+    Tuple[DatasetDict, DatasetDict]
+        Tuple with the separated DatasetDicts x and y
     """
-    input_columns_dataset = dataset.df.select(input_columns)
-    output_columns_dataset = dataset.df.select(output_columns)
+    input_columns_dataset = DatasetDict()
+    output_columns_dataset = DatasetDict()
+    for split in dataset:
+        input_columns_dataset[split] = dataset[split].select_columns(input_columns)
+        output_columns_dataset[split] = dataset[split].select_columns(output_columns)
     return (input_columns_dataset, output_columns_dataset)
 
 
 @beartype
-def get_columns_spec(dataset_path: str) -> Dict[str, str]:
+def get_columns_spec(dataset_path: str) -> Dict[str, Dict]:
     """Return the column with their respective types
 
     Parameters
@@ -324,11 +505,22 @@ def get_columns_spec(dataset_path: str) -> Dict[str, str]:
     Returns
     -------
     Dict
-        Dict with the columns name and types
+        Dict with the columns and types
     """
-    dataset = load_dataset(dataset_path)
-    column_types = dataset.df.schema.to_python()
-    column_types = {col: str(dtype) for col, dtype in dataset.df.schema.items()}
+    dataset = load_dataset(dataset_path=dataset_path)
+    dataset_features = dataset["train"].features
+    column_types = {}
+    for column in dataset_features:
+        if dataset_features[column]._type == "Value":
+            column_types[column] = {
+                "type": "Value",
+                "dtype": dataset_features[column].dtype,
+            }
+        elif dataset_features[column]._type == "ClassLabel":
+            column_types[column] = {
+                "type": "Classlabel",
+                "dtype": "",
+            }
     return column_types
 
 
@@ -352,21 +544,29 @@ def update_columns_spec(dataset_path: str, columns: Dict) -> DatasetDict:
         raise TypeError(f"types should be a dict, got {type(columns)}")
 
     # load the dataset from where its stored
-    dataframe = load_dataset(dataset_path=dataset_path)
-    # copy the features with the columns ans types
-    try:
+    dataset_dict = load_from_disk(dataset_path=dataset_path)
+    for split in dataset_dict:
+        # copy the features with the columns ans types
+        new_features = dataset_dict[split].features
         for column in columns:
-            dtype = columns[column]
-            dataframe = dataframe.with_column(pl.col(column).cast(dtype))
+            if columns[column].type == "ClassLabel":
+                names = list(set(dataset_dict[split][column]))
+                new_features[column] = ClassLabel(names=names)
+            elif columns[column].type == "Value":
+                new_features[column] = Value(columns[column].dtype)
 
-    except ValueError as e:
-        raise ValueError("Error while trying to cast the columns") from e
+        # cast the column types with the changes
+        try:
+            dataset_dict[split] = dataset_dict[split].cast(new_features)
 
-    return dataframe
+        except ValueError as e:
+            raise ValueError("Error while trying to cast the columns") from e
+    return dataset_dict
 
 
-def get_dataset_info(dataset_path: str) -> Dict[str, int]:
-    """Return the info of the dataset with the number of rows and columns.
+def get_dataset_info(dataset_path: str) -> object:
+    """Return the info of the dataset with the number of rows,
+    number of columns and splits size.
 
     Parameters
     ----------
@@ -375,16 +575,22 @@ def get_dataset_info(dataset_path: str) -> Dict[str, int]:
 
     Returns
     -------
-    Dict[str, int]
+    object
         Dictionary with the information of the dataset
     """
-    dataset = load_dataset(dataset_path).df
-    total_rows = dataset.height
-    total_columns = dataset.width
+    dataset = load_dataset(dataset_path=dataset_path)
+    total_rows = sum(split.num_rows for split in dataset.values())
+    total_columns = len(dataset["train"].features)
+    train_size = dataset.train.num_rows if hasattr(dataset, "train") else 0
+    test_size = dataset.test.num_rows if hasattr(dataset, "test") else 0
+    val_size = dataset.validation.num_rows if hasattr(dataset, "validation") else 0
 
     dataset_info = {
         "total_rows": total_rows,
         "total_columns": total_columns,
+        "train_size": train_size,
+        "test_size": test_size,
+        "val_size": val_size,
     }
     return dataset_info
 

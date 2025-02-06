@@ -10,17 +10,11 @@ from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.core.schema_fields import (
-    bool_field,
-    float_field,
-    int_field,
-    schema_field,
-)
-from DashAI.back.core.schema_fields.base_schema import BaseSchema
 
 logger = logging.getLogger(__name__)
 
 
+"""
 class DatasetSplitsSchema(BaseSchema):
     train_size: schema_field(
         float_field(ge=0.0, le=1.0),
@@ -73,6 +67,8 @@ class DataloaderMoreOptionsSchema(BaseSchema):
             "the distribution of classes in each set."
         ),
     )  # type: ignore
+
+"""
 
 
 class BaseDataLoader(ConfigObject):

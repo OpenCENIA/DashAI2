@@ -15,11 +15,7 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
-from DashAI.back.dataloaders.classes.dataloader import (
-    BaseDataLoader,
-    DataloaderMoreOptionsSchema,
-    DatasetSplitsSchema,
-)
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class JSONDataloaderSchema(BaseSchema):
@@ -51,8 +47,6 @@ class JSONDataloaderSchema(BaseSchema):
             "otherwise 'false'."
         ),
     )  # type: ignore
-    splits: DatasetSplitsSchema
-    more_options: DataloaderMoreOptionsSchema
 
 
 class JSONDataLoader(BaseDataLoader):

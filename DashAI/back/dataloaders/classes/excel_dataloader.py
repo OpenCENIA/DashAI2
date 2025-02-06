@@ -19,11 +19,7 @@ from DashAI.back.core.schema_fields import (
     union_type,
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
-from DashAI.back.dataloaders.classes.dataloader import (
-    BaseDataLoader,
-    DataloaderMoreOptionsSchema,
-    DatasetSplitsSchema,
-)
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class ExcelDataloaderSchema(BaseSchema):
@@ -64,8 +60,6 @@ class ExcelDataloaderSchema(BaseSchema):
         ranges (e.g. “A:E” or “A,C,E:F”). Ranges are inclusive of both sides.
         """,
     )  # type: ignore
-    splits: DatasetSplitsSchema
-    more_options: DataloaderMoreOptionsSchema
 
 
 class ExcelDataLoader(BaseDataLoader):

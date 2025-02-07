@@ -128,7 +128,7 @@ async def predict(
     # ---------------------------------------
     dataset = to_dashai_dataset(raw_dataset)
 
-    y_pred = trained_model.predict(dataset["train"])
+    y_pred = trained_model.predict(dataset)
 
     return y_pred.tolist()
 

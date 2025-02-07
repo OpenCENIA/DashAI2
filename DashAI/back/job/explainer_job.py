@@ -127,7 +127,7 @@ class ExplainerJob(BaseJob):
                 f"Dataset {instance_id} to be explained does not exist in DB."
             )
         try:
-            loaded_instance: DatasetDict = load_dataset(f"{instance.file_path}/dataset")
+            loaded_instance = load_dataset(f"{instance.file_path}/dataset")
         except Exception as e:
             log.exception(e)
             raise JobError(
@@ -137,6 +137,7 @@ class ExplainerJob(BaseJob):
             prepared_instance = task.prepare_for_task(
                 loaded_instance, outputs_columns=self.output_columns
             )
+            prepared_instance = DatasetDict({"train": prepared_instance})
             X, _ = select_columns(
                 prepared_instance,
                 self.input_columns,
@@ -271,7 +272,9 @@ class ExplainerJob(BaseJob):
                 ) from e
             try:
                 splits = json.loads(experiment.splits)
-                dataset_splits_path = f"{dataset.file_path}/dataset/dataset_dict.json"
+                dataset_splits_path = os.path.join(
+                    dataset.file_path, "dataset", "metadata.json"
+                )
 
                 if (
                     not os.path.exists(dataset_splits_path)
@@ -284,10 +287,16 @@ class ExplainerJob(BaseJob):
                 with open(dataset_splits_path, "r") as f:
                     dataset_splits = json.load(f)
 
-                already_splited = len(dataset_splits) != 1
-
-                if not already_splited:
-                    n = len(loaded_dataset["train"])
+                if "split_indices" in dataset_splits:
+                    splits_index = dataset_splits["split_indices"]
+                    loaded_dataset = split_dataset(
+                        loaded_dataset,
+                        train_indexes=splits_index["train"],
+                        test_indexes=splits_index["test"],
+                        val_indexes=splits_index["validation"],
+                    )
+                else:
+                    n = len(loaded_dataset)
                     train_indexes, test_indexes, val_indexes = split_indexes(
                         n,
                         splits["train"],
@@ -295,21 +304,13 @@ class ExplainerJob(BaseJob):
                         splits["validation"],
                     )
                     loaded_dataset = split_dataset(
-                        loaded_dataset["train"],
+                        loaded_dataset,
                         train_indexes=train_indexes,
                         test_indexes=test_indexes,
                         val_indexes=val_indexes,
                     )
-                if splits["has_changed"]:
-                    new_splits = {
-                        "train": splits["train"],
-                        "test": splits["test"],
-                        "validation": splits["validation"],
-                    }
-                    loaded_dataset = update_dataset_splits(
-                        loaded_dataset, new_splits, splits["is_random"]
-                    )
-                prepared_dataset = task.prepare_for_task(
+
+                prepared_dataset: DatasetDict = task.prepare_for_task(
                     datasetdict=loaded_dataset,
                     outputs_columns=self.output_columns,
                 )

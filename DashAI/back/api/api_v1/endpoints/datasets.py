@@ -20,8 +20,6 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     get_dataset_info,
     load_dataset,
     save_dataset,
-    split_dataset,
-    split_indexes,
     to_dashai_dataset,
     update_columns_spec,
 )
@@ -136,7 +134,7 @@ async def get_sample(
                     detail="Dataset not found",
                 )
             dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
-            sample = dataset["train"].sample(n=10)
+            sample = dataset.sample(n=10)
         except exc.SQLAlchemyError as e:
             logger.exception(e)
             raise HTTPException(
@@ -387,6 +385,7 @@ async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 
@@ -414,6 +413,8 @@ async def update_dataset(
                 update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
             if params.name:
                 setattr(dataset, "name", params.name)
+                new_folder_path = config["DATASETS_PATH"] / params.name
+                os.rename(dataset.file_path, new_folder_path)
                 db.commit()
                 db.refresh(dataset)
                 return dataset

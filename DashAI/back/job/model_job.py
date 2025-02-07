@@ -111,7 +111,9 @@ class ModelJob(BaseJob):
 
             try:
                 splits = json.loads(experiment.splits)
-                dataset_splits_path = f"{dataset.file_path}/dataset/dataset_dict.json"
+                dataset_splits_path = os.path.join(
+                    dataset.file_path, "dataset", "metadata.json"
+                )
 
                 if (
                     not os.path.exists(dataset_splits_path)
@@ -124,10 +126,16 @@ class ModelJob(BaseJob):
                 with open(dataset_splits_path, "r") as f:
                     dataset_splits = json.load(f)
 
-                already_splited = len(dataset_splits) != 1
-
-                if not already_splited:
-                    n = len(loaded_dataset["train"])
+                if "split_indices" in dataset_splits:
+                    splits_index = dataset_splits["split_indices"]
+                    loaded_dataset = split_dataset(
+                        loaded_dataset,
+                        train_indexes=splits_index["train"],
+                        test_indexes=splits_index["test"],
+                        val_indexes=splits_index["validation"],
+                    )
+                else:
+                    n = len(loaded_dataset)
                     train_indexes, test_indexes, val_indexes = split_indexes(
                         n,
                         splits["train"],
@@ -135,23 +143,12 @@ class ModelJob(BaseJob):
                         splits["validation"],
                     )
                     loaded_dataset = split_dataset(
-                        loaded_dataset["train"],
+                        loaded_dataset,
                         train_indexes=train_indexes,
                         test_indexes=test_indexes,
                         val_indexes=val_indexes,
                     )
 
-                if splits["has_changed"]:
-                    new_splits = {
-                        "train": splits["train"],
-                        "test": splits["test"],
-                        "validation": splits["validation"],
-                    }
-                    loaded_dataset = update_dataset_splits(
-                        loaded_dataset,
-                        new_splits,
-                        splits["is_random"],
-                    )
                 prepared_dataset = task.prepare_for_task(
                     loaded_dataset, experiment.output_columns
                 )

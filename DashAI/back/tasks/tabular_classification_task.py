@@ -12,6 +12,8 @@ class TabularClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
+    COMPATIBLE_COMPONENTS = ["Accuracy", "F1", "Precision", "Recall"]
+
     DESCRIPTION: str = """
     Tabular classification in machine learning involves predicting categorical
     labels for structured data organized in tabular form (rows and columns).

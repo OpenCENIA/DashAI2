@@ -94,6 +94,11 @@ export default function NewExperimentModal({
           run.params,
           run.optimizer_name || "",
           run.optimizer_parameters || {},
+          run.plot_history_path || "",
+          run.plot_slice_path || "",
+          run.plot_contour_path || "",
+          run.plot_importance_path || "",
+          run.goal_metric || "",
           "",
         );
       } catch (error) {

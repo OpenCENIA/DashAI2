@@ -10,7 +10,10 @@ from DashAI.back.core.schema_fields import (
     int_field,
     schema_field,
 )
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    get_arrow_table,
+)
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
@@ -118,13 +121,15 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
         self.vectorizer.fit(x[input_column])
         tokenizer_func = self.get_vectorizer(input_column)
         tokenized_dataset = x.map(tokenizer_func, remove_columns="text")
+        arrow_tbl = get_arrow_table(tokenized_dataset)
 
-        self.classifier.fit(DashAIDataset(tokenized_dataset.data), y)
+        self.classifier.fit(DashAIDataset(arrow_tbl), y)
 
     def predict(self, x: Dataset):
         input_column = x.column_names[0]
 
         tokenizer_func = self.get_vectorizer(input_column)
         tokenized_dataset = x.map(tokenizer_func, remove_columns="text")
+        arrow_tbl = get_arrow_table(tokenized_dataset)
 
-        return self.classifier.predict(DashAIDataset(tokenized_dataset.data))
+        return self.classifier.predict(DashAIDataset(arrow_tbl))

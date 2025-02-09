@@ -6,6 +6,10 @@ from beartype import beartype
 from datasets import Audio, DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
@@ -18,7 +22,7 @@ class AudioDataLoader(BaseDataLoader):
         filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
-    ) -> DatasetDict:
+    ) -> DashAIDataset:
         """Load and audio dataset into a DatasetDict.
 
         Parameters
@@ -63,4 +67,4 @@ class AudioDataLoader(BaseDataLoader):
                     "The following content type was delivered: "
                     f"{filepath_or_buffer.content_type}"
                 )
-        return dataset
+        return to_dashai_dataset(dataset)

@@ -273,7 +273,7 @@ class ExplainerJob(BaseJob):
             try:
                 splits = json.loads(experiment.splits)
                 dataset_splits_path = os.path.join(
-                    dataset.file_path, "dataset", "metadata.json"
+                    dataset.file_path, "dataset", "splits.json"
                 )
 
                 if (

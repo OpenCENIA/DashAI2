@@ -16,6 +16,10 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
@@ -71,7 +75,7 @@ class CSVDataLoader(BaseDataLoader):
         filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
-    ) -> DatasetDict:
+    ) -> DashAIDataset:
         """Load the uploaded CSV files into a DatasetDict.
 
         Parameters
@@ -124,4 +128,4 @@ class CSVDataLoader(BaseDataLoader):
                 finally:
                     os.remove(files_path)
 
-        return dataset
+        return to_dashai_dataset(dataset)

@@ -283,8 +283,6 @@ async def upload_dataset(
             params=parsed_params.model_dump(),
         )
 
-        new_dataset = to_dashai_dataset(new_dataset)
-
         dataset_path = folder_path / "dataset"
         logger.debug("Saving dataset in %s", str(dataset_path))
         save_dataset(new_dataset, dataset_path)

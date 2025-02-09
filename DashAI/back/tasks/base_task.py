@@ -51,7 +51,7 @@ class BaseTask:
 
         Parameters
         ----------
-        dataset : DatasetDict
+        dataset : DashAIDataset
             Dataset to be validated
         dataset_name : str
             Dataset name
@@ -96,7 +96,7 @@ class BaseTask:
     @abstractmethod
     def prepare_for_task(
         self, dataset: Union[DatasetDict, DashAIDataset], outputs_columns: List[str]
-    ) -> Union[DatasetDict, DashAIDataset]:
+    ) -> DashAIDataset:
         """Change column types to suit the task requirements.
 
         Parameters
@@ -106,7 +106,7 @@ class BaseTask:
 
         Returns
         -------
-        Union[DatasetDict, DashAIDataset]
+        DashAIDataset
             Dataset with the new types
         """
         raise NotImplementedError

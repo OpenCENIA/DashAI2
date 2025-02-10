@@ -21,6 +21,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const [compatibleModels, setCompatibleModels] = useState([]);
 
   const { defaultValues } = useSchema({ modelName: selectedModel });
+
   const getCompatibleModels = async () => {
     try {
       const models = await getComponentsRequest({
@@ -41,10 +42,18 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   const handleAddButton = () => {
-    // sets the default values of the newly added model, making optional the parameter configuration
+    const existingModelsOfType = newExp.runs.filter(
+      (run) => run.model === selectedModel,
+    ).length;
+
+    const modelName =
+      name.trim() === ""
+        ? `${selectedModel}_${existingModelsOfType + 1}`
+        : name;
+
     const newModel = {
       id: uuid(),
-      name,
+      name: modelName,
       model: selectedModel,
       params: defaultValues,
       optimizer_name: "OptunaOptimizer",
@@ -52,8 +61,10 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         n_trials: 10,
         sampler: "TPESampler",
         pruner: "None",
+        metric: "auto",
       },
     };
+
     setNewExp({ ...newExp, runs: [newModel, ...newExp.runs] });
     setName("");
     setSelectedModel("");
@@ -61,8 +72,7 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
 
   // checks if there is at least 1 model added to enable the "Next" button
   useEffect(() => {
-    const allModelsHaveMetric = newExp.runs.every((model) => model.goal_metric);
-    if (newExp.runs.length && allModelsHaveMetric) {
+    if (newExp.runs.length > 0) {
       setNextEnabled(true);
     } else {
       setNextEnabled(false);
@@ -88,7 +98,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         </Typography>
       </Grid>
 
-      {/* Form to add a single model to the experiment */}
       <Grid item xs={12}>
         <Grid container direction="row" columnSpacing={3} wrap="nowrap">
           <Grid item xs={4} md={12}>
@@ -96,7 +105,10 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
               label="Name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              placeholder={selectedModel ? `${selectedModel}_1` : "Model_1"}
+              InputLabelProps={{ shrink: true }}
               fullWidth
+              key={selectedModel}
             />
           </Grid>
 

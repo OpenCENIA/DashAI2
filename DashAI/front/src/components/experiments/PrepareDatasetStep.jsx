@@ -37,6 +37,9 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [outputColumns, setOutputColumns] = useState([]);
   const [columnsReady, setColumnsReady] = useState(true);
   const [columnsAreValid, setColumnsAreValid] = useState(false);
+  const [shuffle, setShuffle] = useState(true);
+  const [stratify, setStratify] = useState(false);
+  const [seed, setSeed] = useState(42);
 
   // rows index state
   const defaultParitionsIndex = {
@@ -132,8 +135,6 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   useEffect(() => {
-    console.log("Columns ready:", columnsReady);
-    console.log("Splits ready:", splitsReady);
     if (columnsReady && splitsReady) {
       validateColumns();
     }
@@ -158,6 +159,9 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
           output_columns: outputColumns,
           splits: {
             ...rowsPartitionsPercentage,
+            shuffle: shuffle,
+            stratify: stratify,
+            seed: seed,
           },
         });
       }
@@ -233,6 +237,13 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
             setSplitsReady={setSplitsReady}
             splitType={splitType}
             setSplitType={setSplitType}
+            SPLIT_TYPES={SPLIT_TYPES}
+            shuffle={shuffle}
+            setShuffle={setShuffle}
+            stratify={stratify}
+            setStratify={setStratify}
+            seed={seed}
+            setSeed={setSeed}
           />
         </Grid>
       ) : (

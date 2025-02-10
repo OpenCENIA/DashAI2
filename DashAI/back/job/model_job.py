@@ -137,6 +137,9 @@ class ModelJob(BaseJob):
                         train_indexes=train_indexes,
                         test_indexes=test_indexes,
                         val_indexes=val_indexes,
+                        shuffle=splits.get("shuffle", False),
+                        seed=splits.get("seed", 42),
+                        stratify=splits.get("stratify", False),
                     )
 
                 prepared_dataset = task.prepare_for_task(

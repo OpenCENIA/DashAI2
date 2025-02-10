@@ -55,7 +55,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const handleSubmitNewDataset = async () => {
     try {
       const formData = new FormData();
-
+      if (newDataset.params.name === null) {
+        newDataset.params.name = newDataset.file.name;
+      }
       formData.append(
         "params",
         JSON.stringify({

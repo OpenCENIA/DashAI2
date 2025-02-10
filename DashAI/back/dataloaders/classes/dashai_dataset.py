@@ -79,7 +79,7 @@ class DashAIDataset(Dataset):
         try:
             return self._data.table
         except AttributeError:
-            raise ValueError("Unable to retrieve the underlying Arrow table.")
+            raise ValueError("Unable to retrieve the underlying Arrow table.") from None
 
     def keys(self) -> List[str]:
         """Return the available splits in the dataset.

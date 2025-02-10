@@ -21,7 +21,7 @@ class DatasetParams(BaseModel):
 
     dataloader: str
     name: str
-    splits_in_folders: bool = False
+    dataset_is_already_split: bool = False
 
 
 #   splits: SplitParams

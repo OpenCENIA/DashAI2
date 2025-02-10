@@ -15,7 +15,7 @@ def create_dataset_1(client):
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "test_csv",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,
@@ -46,7 +46,7 @@ def create_dataset_2(client):
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "test_csv2",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,

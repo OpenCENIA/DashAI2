@@ -723,9 +723,13 @@ def get_dataset_info(dataset_path: str) -> object:
     dataset = load_dataset(dataset_path=dataset_path)
     total_rows = dataset.num_rows
     total_columns = len(dataset.features)
-    train_size = dataset.train.num_rows if hasattr(dataset, "train") else 0
-    test_size = dataset.test.num_rows if hasattr(dataset, "test") else 0
-    val_size = dataset.validation.num_rows if hasattr(dataset, "validation") else 0
+    splits = dataset.splits.get("split_indices", {})
+    train_indices = splits.get("train", [])
+    test_indices = splits.get("test", [])
+    val_indices = splits.get("validation", [])
+    train_size = len(train_indices)
+    test_size = len(test_indices)
+    val_size = len(val_indices)
 
     dataset_info = {
         "total_rows": total_rows,
@@ -733,6 +737,9 @@ def get_dataset_info(dataset_path: str) -> object:
         "train_size": train_size,
         "test_size": test_size,
         "val_size": val_size,
+        "train_indices": train_indices,
+        "test_indices": test_indices,
+        "val_indices": val_indices,
     }
     return dataset_info
 

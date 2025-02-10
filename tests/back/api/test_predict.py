@@ -84,7 +84,7 @@ def create_dataset(client: TestClient):
             data={
                 "params": """{  "dataloader": "JSONDataLoader",
                                     "name": "test_json",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,

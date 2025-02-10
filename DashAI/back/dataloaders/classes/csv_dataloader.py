@@ -37,12 +37,13 @@ class CSVDataloaderSchema(BaseSchema):
         ",",
         "A separator character delimits the data in a CSV file.",
     )  # type: ignore
-    splits_in_folders: schema_field(
+    dataset_is_already_split: schema_field(
         bool_field(),
         False,
         (
-            "If your data has folders that define the splits select 'true', "
-            "otherwise 'false'."
+            "If your dataset is already split into training, validation, and test sets, "
+            "upload it as a ZIP file with each split in separate folders. Otherwise, "
+            "upload a single dataset file."
         ),
     )  # type: ignore
 

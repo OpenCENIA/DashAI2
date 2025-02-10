@@ -116,23 +116,8 @@ class ModelJob(BaseJob):
 
             try:
                 splits = json.loads(experiment.splits)
-                dataset_splits_path = os.path.join(
-                    dataset.file_path, "dataset", "splits.json"
-                )
-
-                if (
-                    not os.path.exists(dataset_splits_path)
-                    or os.path.getsize(dataset_splits_path) == 0
-                ):
-                    raise JobError(
-                        f"Dataset splits file is missing: {dataset_splits_path}"
-                    )
-
-                with open(dataset_splits_path, "r") as f:
-                    dataset_splits = json.load(f)
-
-                if "split_indices" in dataset_splits:
-                    splits_index = dataset_splits["split_indices"]
+                if type(splits.get("train")) == list:
+                    splits_index = splits
                     loaded_dataset = split_dataset(
                         loaded_dataset,
                         train_indexes=splits_index["train"],

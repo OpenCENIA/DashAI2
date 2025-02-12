@@ -4,16 +4,19 @@ import os
 import pickle
 from typing import List
 
+import numpy as np
 from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
+    get_column_names_from_indexes,
     load_dataset,
     select_columns,
     split_dataset,
     split_indexes,
+    to_dashai_dataset,
     update_dataset_splits,
 )
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
@@ -115,36 +118,40 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
+                prepared_dataset = task.prepare_for_task(
+                    loaded_dataset, experiment.output_columns
+                )
                 splits = json.loads(experiment.splits)
-                if type(splits.get("train")) == list:
+                splitType = splits.get("splitType")
+                if splitType == "manual" or splitType == "predefined":
                     splits_index = splits
-                    loaded_dataset = split_dataset(
-                        loaded_dataset,
+                    prepared_dataset = split_dataset(
+                        prepared_dataset,
                         train_indexes=splits_index["train"],
                         test_indexes=splits_index["test"],
                         val_indexes=splits_index["validation"],
                     )
                 else:
-                    n = len(loaded_dataset)
+                    n = len(prepared_dataset)
+                    output_column = experiment.output_columns[0]
+                    labels = prepared_dataset[output_column]
                     train_indexes, test_indexes, val_indexes = split_indexes(
                         n,
                         splits["train"],
                         splits["test"],
                         splits["validation"],
+                        shuffle=splits.get("shuffle", False),
+                        seed=splits.get("seed", None),
+                        stratify=splits.get("stratify", False),
+                        labels=labels,
                     )
-                    loaded_dataset = split_dataset(
-                        loaded_dataset,
+                    prepared_dataset = split_dataset(
+                        prepared_dataset,
                         train_indexes=train_indexes,
                         test_indexes=test_indexes,
                         val_indexes=val_indexes,
-                        shuffle=splits.get("shuffle", False),
-                        seed=splits.get("seed", 42),
-                        stratify=splits.get("stratify", False),
                     )
 
-                prepared_dataset = task.prepare_for_task(
-                    loaded_dataset, experiment.output_columns
-                )
                 x, y = select_columns(
                     prepared_dataset,
                     experiment.input_columns,
@@ -152,6 +159,7 @@ class ModelJob(BaseJob):
                 )
                 x = split_dataset(x)
                 y = split_dataset(y)
+
             except Exception as e:
                 log.exception(e)
                 raise JobError(

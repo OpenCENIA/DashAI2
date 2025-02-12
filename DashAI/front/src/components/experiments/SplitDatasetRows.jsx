@@ -324,7 +324,7 @@ function SplitDatasetRows({
                   autoComplete="off"
                   type="number"
                   size="small"
-                  helperText="Enter a seed value for reproducibility"
+                  helperText="Enter a seed value for reproducibility (optional)"
                 />
               </Grid>
             </Grid>

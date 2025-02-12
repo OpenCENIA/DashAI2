@@ -39,7 +39,7 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
   const [columnsAreValid, setColumnsAreValid] = useState(false);
   const [shuffle, setShuffle] = useState(true);
   const [stratify, setStratify] = useState(false);
-  const [seed, setSeed] = useState(42);
+  const [seed, setSeed] = useState();
 
   // rows index state
   const defaultParitionsIndex = {
@@ -134,6 +134,43 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
     }
   };
 
+  const updateExperiment = () => {
+    if (splitType === SPLIT_TYPES.MANUAL) {
+      setNewExp({
+        ...newExp,
+        input_columns: inputColumns,
+        output_columns: outputColumns,
+        splits: {
+          ...rowsPartitionsIndex,
+          splitType: splitType,
+        },
+      });
+    } else if (splitType === SPLIT_TYPES.RANDOM) {
+      setNewExp({
+        ...newExp,
+        input_columns: inputColumns,
+        output_columns: outputColumns,
+        splits: {
+          ...rowsPartitionsPercentage,
+          shuffle: shuffle,
+          stratify: stratify,
+          seed: seed,
+          splitType: splitType,
+        },
+      });
+    } else if (splitType === SPLIT_TYPES.PREDEFINED) {
+      setNewExp({
+        ...newExp,
+        input_columns: inputColumns,
+        output_columns: outputColumns,
+        splits: {
+          ...datasetPartitionsIndex,
+          splitType: splitType,
+        },
+      });
+    }
+  };
+
   useEffect(() => {
     if (columnsReady && splitsReady) {
       validateColumns();
@@ -142,44 +179,20 @@ function PrepareDatasetStep({ newExp, setNewExp, setNextEnabled }) {
 
   useEffect(() => {
     if (columnsAreValid && splitsReady && columnsReady) {
-      if (splitType === SPLIT_TYPES.MANUAL) {
-        setNewExp({
-          ...newExp,
-          input_columns: inputColumns,
-          output_columns: outputColumns,
-          splits: {
-            ...rowsPartitionsIndex,
-          },
-        }); // splits should depend on preference
-      }
-      if (splitType === SPLIT_TYPES.RANDOM) {
-        setNewExp({
-          ...newExp,
-          input_columns: inputColumns,
-          output_columns: outputColumns,
-          splits: {
-            ...rowsPartitionsPercentage,
-            shuffle: shuffle,
-            stratify: stratify,
-            seed: seed,
-          },
-        });
-      }
-      if (splitType === SPLIT_TYPES.PREDEFINED) {
-        setNewExp({
-          ...newExp,
-          input_columns: inputColumns,
-          output_columns: outputColumns,
-          splits: {
-            ...datasetPartitionsIndex,
-          },
-        });
-      }
+      updateExperiment();
       setNextEnabled(true);
     } else {
       setNextEnabled(false);
     }
-  }, [columnsReady, splitsReady, columnsAreValid]);
+  }, [
+    columnsReady,
+    splitsReady,
+    columnsAreValid,
+    splitType,
+    shuffle,
+    stratify,
+    seed,
+  ]);
 
   useEffect(() => {
     getDatasetInfo();

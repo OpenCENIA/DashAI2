@@ -366,6 +366,8 @@ def split_indexes(
     val_size: float,
     seed: Union[int, None] = None,
     shuffle: bool = True,
+    stratify: bool = False,
+    labels: Union[List, None] = None,
 ) -> Tuple[List, List, List]:
     """Generate lists with train, test and validation indexes.
 
@@ -401,6 +403,9 @@ def split_indexes(
     shuffle : bool, optional
         If True, the data will be shuffled when splitting the dataset,
         by default True.
+    stratify : bool, optional
+        If True, the data will be stratified when splitting the dataset,
+        by default False.
 
     Returns
     -------
@@ -409,22 +414,31 @@ def split_indexes(
     """
 
     # Generate shuffled indexes
-    np.random.seed(seed)
+    if seed is None:
+        np.random.seed(seed)
     indexes = np.arange(total_rows)
 
     test_val = test_size + val_size
     val_proportion = test_size / test_val
+
+    stratify_labels = np.array(labels) if stratify else None
+
     train_indexes, test_val_indexes = train_test_split(
         indexes,
         train_size=train_size,
         random_state=seed,
         shuffle=shuffle,
+        stratify=stratify_labels,
     )
+
+    stratify_labels_test_val = stratify_labels[test_val_indexes] if stratify else None
+
     test_indexes, val_indexes = train_test_split(
         test_val_indexes,
         train_size=val_proportion,
         random_state=seed,
         shuffle=shuffle,
+        stratify=stratify_labels_test_val,
     )
     return list(train_indexes), list(test_indexes), list(val_indexes)
 
@@ -485,6 +499,12 @@ def split_dataset(
 
     # Get the underlying table
     table = dataset.arrow_table
+
+    dataset.splits["split_indices"] = {
+        "train": train_indexes,
+        "test": test_indexes,
+        "validation": val_indexes,
+    }
 
     # Create separate tables for each split
     train_table = table.filter(pa.array(train_mask))

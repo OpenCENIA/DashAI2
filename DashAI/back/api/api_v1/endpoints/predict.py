@@ -122,13 +122,13 @@ async def predict(
         params={"data_key": "data"},
     )
     # TODO Extract this Code to DashAIDataset
-    input_df = pd.DataFrame(raw_dataset["train"])
+    input_df = pd.DataFrame(raw_dataset)
     input_df = input_df.reindex(columns=exp.input_columns)
-    raw_dataset["train"] = Dataset.from_pandas(input_df)
+    raw_dataset = Dataset.from_pandas(input_df)
     # ---------------------------------------
     dataset = to_dashai_dataset(raw_dataset)
 
-    y_pred = trained_model.predict(dataset["train"])
+    y_pred = trained_model.predict(dataset)
 
     return y_pred.tolist()
 

@@ -20,8 +20,6 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     get_dataset_info,
     load_dataset,
     save_dataset,
-    split_dataset,
-    split_indexes,
     to_dashai_dataset,
     update_columns_spec,
 )
@@ -136,7 +134,7 @@ async def get_sample(
                     detail="Dataset not found",
                 )
             dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
-            sample = dataset["train"].sample(n=10)
+            sample = dataset.sample(n=10)
         except exc.SQLAlchemyError as e:
             logger.exception(e)
             raise HTTPException(
@@ -285,25 +283,7 @@ async def upload_dataset(
             params=parsed_params.model_dump(),
         )
 
-        new_dataset = to_dashai_dataset(new_dataset)
-
-        if not parsed_params.splits_in_folders:
-            n = len(new_dataset["train"])
-            train_indexes, test_indexes, val_indexes = split_indexes(
-                n,
-                parsed_params.splits.train_size,
-                parsed_params.splits.test_size,
-                parsed_params.splits.val_size,
-                parsed_params.more_options.seed,
-                parsed_params.more_options.shuffle,
-            )
-            new_dataset = split_dataset(
-                new_dataset["train"],
-                train_indexes=train_indexes,
-                test_indexes=test_indexes,
-                val_indexes=val_indexes,
-            )
-            dataset_path = folder_path / "dataset"
+        dataset_path = folder_path / "dataset"
         logger.debug("Saving dataset in %s", str(dataset_path))
         save_dataset(new_dataset, dataset_path)
 
@@ -403,6 +383,7 @@ async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 
@@ -430,6 +411,8 @@ async def update_dataset(
                 update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
             if params.name:
                 setattr(dataset, "name", params.name)
+                new_folder_path = config["DATASETS_PATH"] / params.name
+                os.rename(dataset.file_path, new_folder_path)
                 db.commit()
                 db.refresh(dataset)
                 return dataset

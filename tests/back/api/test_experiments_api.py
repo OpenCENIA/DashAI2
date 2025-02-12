@@ -12,8 +12,6 @@ splits = json.dumps(
         "train": 0.5,
         "test": 0.2,
         "validation": 0.3,
-        "is_random": True,
-        "has_changed": True,
         "seed": 42,
         "shuffle": True,
         "stratify": False,
@@ -32,7 +30,7 @@ def create_dataset(client):
             data={
                 "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "DummyDataset",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,

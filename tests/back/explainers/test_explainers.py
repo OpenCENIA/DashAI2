@@ -49,22 +49,24 @@ def tabular_model_fixture():
         params={"separator": ","},
     )
 
-    total_rows = len(datasetdict["train"])
+    total_rows = datasetdict.num_rows
     train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_dataset_dict = split_dataset(
-        datasetdict["train"],
+        datasetdict,
         train_indexes=train_indexes,
         test_indexes=test_indexes,
         val_indexes=val_indexes,
     )
 
-    dataset = select_columns(split_dataset_dict, INPUT_COLUMNS, OUTPUT_COLUMNS)
+    x, y = select_columns(split_dataset_dict, INPUT_COLUMNS, OUTPUT_COLUMNS)
     types = {column: "Categorical" for column in OUTPUT_COLUMNS}
 
-    for split in dataset[1]:
-        dataset[1][split] = dataset[1][split].change_columns_type(types)
+    y = split_dataset(y.change_columns_type(types))
+    x = split_dataset(x)
+
+    dataset = x, y
 
     return dataset
 
@@ -84,7 +86,7 @@ def trained_model(dataset):
     return model
 
 
-def test_partial_dependence(trained_model: BaseModel, dataset: DatasetDict):
+def test_partial_dependence(trained_model: BaseModel, dataset):
     parameters = {
         "grid_resolution": 50,
         "lower_percentile": 0.01,

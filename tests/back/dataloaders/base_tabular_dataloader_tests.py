@@ -12,6 +12,7 @@ from fastapi.datastructures import Headers
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders import BaseDataLoader
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, split_dataset
 
 # TODO: Test no header, empty file, bad split folder structure.
 
@@ -86,10 +87,9 @@ class BaseTabularDataLoaderTester:
         )
 
         # check if the dataset is a dataset dict and its correctly loaded.
-        assert isinstance(dataset, DatasetDict)
-        assert "train" in dataset
-        assert dataset["train"].num_rows == nrows
-        assert dataset["train"].num_columns == ncols
+        assert isinstance(dataset, DashAIDataset)
+        assert dataset.num_rows == nrows
+        assert dataset.num_columns == ncols
 
     def _test_load_data_from_zip(
         self,
@@ -137,6 +137,7 @@ class BaseTabularDataLoaderTester:
                 temp_path="tests/back/dataloaders/iris",
                 params=params,
             )
+        dataset = split_dataset(dataset)
 
         # check each dataset of the datasetdict.
         assert isinstance(dataset, DatasetDict)

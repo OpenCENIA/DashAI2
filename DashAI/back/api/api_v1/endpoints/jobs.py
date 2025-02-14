@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
 from sqlalchemy.orm import sessionmaker
@@ -101,52 +101,77 @@ async def get_job(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def enqueue_job(
-    params: JobParams,
+    request: Request,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
     job_queue: BaseJobQueue = Depends(lambda: di["job_queue"]),
 ):
-    """Create a runner job and put it in the job queue.
+    """Create a job and put it in the job queue.
 
     Parameters
     ----------
-    run_id : int
-        Id of the Run to train and evaluate.
-    session_factory : Callable[..., ContextManager[Session]]
-        A factory that creates a context manager that handles a SQLAlchemy session.
-        The generated session can be used to access and query the database.
+    request : Request
+        FastAPI request object that can handle both JSON and FormData
+    session_factory : sessionmaker
+        Database session factory
     component_registry : ComponentRegistry
-        Registry containing the current app available components.
+        Registry containing available components
     job_queue : BaseJobQueue
-        The current app job queue.
+        The job queue instance
 
     Returns
     -------
     dict
-        dict with the new job on the database
+        The created job
     """
-    with session_factory() as db:
-        params.db = db
-        job: BaseJob = component_registry[params.job_type]["class"](
-            **params.model_dump()
+    try:
+        content_type = request.headers.get("content-type", "")
+
+        # Handle FormData
+        if "multipart/form-data" in content_type:
+            form = await request.form()
+            job_params = JobParams(
+                job_type=form.get("job_type"),
+                kwargs={key: value for key, value in form.items() if key != "job_type"},
+            )
+        # Handle JSON
+        else:
+            print("application/json")
+            data = await request.json()
+            job_params = JobParams(**data)
+
+        with session_factory() as db:
+            job_params.kwargs["db"] = db
+            job: BaseJob = component_registry[job_params.job_type]["class"](
+                **job_params.model_dump()
+            )
+
+            try:
+                job.set_status_as_delivered()
+            except JobError as e:
+                logger.exception(e)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Job not delivered",
+                ) from e
+
+            try:
+                job_queue.put(job)
+            except JobQueueError as e:
+                logger.exception(e)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Job not enqueued",
+                ) from e
+
+        return job
+
+    except Exception as e:
+        logger.exception(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
         )
-        try:
-            job.set_status_as_delivered()
-        except JobError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Job not delivered",
-            ) from e
-        try:
-            job_queue.put(job)
-        except JobQueueError as e:
-            logger.exception(e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Job not enqueued",
-            ) from e
-    return job
 
 
 @router.delete("/")

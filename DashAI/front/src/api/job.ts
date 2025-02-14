@@ -28,6 +28,15 @@ export const enqueueExplainerJob = async (
   return response.data;
 };
 
+export const enqueueDatasetJob = async (
+  formData: FormData,
+): Promise<object> => {
+  formData.append("job_type", "DatasetJob");
+
+  const response = await api.post<object>("/v1/job/", formData);
+  return response.data;
+};
+
 export const startJobQueue = async (
   stopWhenQueueEmpties: boolean | undefined,
 ): Promise<object> => {

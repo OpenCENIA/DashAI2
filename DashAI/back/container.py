@@ -17,7 +17,7 @@ from DashAI.back.explainability import (
     PartialDependence,
     PermutationFeatureImportance,
 )
-from DashAI.back.job import ExplainerJob, ModelJob
+from DashAI.back.job import DatasetJob, ExplainerJob, ModelJob
 from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall
 from DashAI.back.models import (
     SVC,
@@ -38,10 +38,7 @@ from DashAI.back.models import (
     RidgeRegression,
     ViTTransformer,
 )
-from DashAI.back.optimizers import (
-    HyperOptOptimizer,
-    OptunaOptimizer,
-)
+from DashAI.back.optimizers import HyperOptOptimizer, OptunaOptimizer
 from DashAI.back.tasks import (
     ImageClassificationTask,
     RegressionTask,
@@ -97,6 +94,7 @@ INITIAL_COMPONENTS = [
     # Jobs
     ExplainerJob,
     ModelJob,
+    DatasetJob,
     # Explainers
     KernelShap,
     PartialDependence,

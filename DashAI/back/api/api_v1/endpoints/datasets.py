@@ -221,6 +221,7 @@ async def get_types(
     return columns_spec
 
 
+'''
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_dataset(
@@ -323,6 +324,8 @@ async def upload_dataset(
 
     logger.debug("Dataset creation sucessfully finished.")
     return new_dataset
+
+'''
 
 
 @router.delete("/{dataset_id}")

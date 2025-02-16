@@ -35,14 +35,15 @@ class DatasetJob(BaseJob):
         session_factory: sessionmaker = lambda di: di["session_factory"],
         config: Dict[str, Any] = lambda di: di["config"],
     ) -> None:
-        params: str = self.kwargs["params"]
+
+        file = self.kwargs["file"]
+        contenido = file.file.read()
+        print(contenido)
+        params = self.kwargs
         url: str = self.kwargs.get("url")
         file = self.kwargs.get("file")
-        print(file.filename)
-        print(file.content_type)
-        print(file.size)
 
-        parsed_params = parse_params(DatasetParams, params)
+        parsed_params = DatasetParams.model_validate(params)
         dataloader = component_registry[parsed_params.dataloader]["class"]()
         folder_path = config["DATASETS_PATH"] / parsed_params.name
 

@@ -55,15 +55,17 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       if (!newDataset.params.name) {
         newDataset.params.name = newDataset.file.name;
       }
+      formData.append("job_type", "DatasetJob");
+      formData.append("file", newDataset.file);
+      console.log("newDataset.file", newDataset.file);
       formData.append(
-        "params",
+        "kwargs",
         JSON.stringify({
           ...newDataset.params,
           dataloader: newDataset.dataloader,
         }),
       );
-      formData.append("url", ""); // TODO: url handling
-      formData.append("file", newDataset.file);
+      console.log("newDataset", newDataset.params);
       await enqueueDatasetJobRequest(formData);
       await startJobQueue();
       enqueueSnackbar("Dataset upload job started", { variant: "success" });

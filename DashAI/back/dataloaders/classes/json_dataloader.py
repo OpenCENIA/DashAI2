@@ -104,7 +104,6 @@ class JSONDataLoader(BaseDataLoader):
         """
         self._check_params(params)
         field = params["data_key"]
-        print(field)
 
         if isinstance(filepath_or_buffer, str):
             dataset = load_dataset(
@@ -126,7 +125,6 @@ class JSONDataLoader(BaseDataLoader):
                     shutil.rmtree(temp_path, ignore_errors=True)
             else:
                 try:
-                    print(field)
                     dataset = load_dataset(
                         "json",
                         data_files=files_path,

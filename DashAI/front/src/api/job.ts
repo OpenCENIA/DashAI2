@@ -31,8 +31,6 @@ export const enqueueExplainerJob = async (
 export const enqueueDatasetJob = async (
   formData: FormData,
 ): Promise<object> => {
-  formData.append("job_type", "DatasetJob");
-
   const response = await api.post<object>("/v1/job/", formData);
   return response.data;
 };

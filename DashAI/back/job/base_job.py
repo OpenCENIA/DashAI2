@@ -17,8 +17,10 @@ class BaseJob(metaclass=ABCMeta):
         kwargs: dict
             dictionary containing the parameters of the job.
         """
+        file = kwargs.pop("file", None)
+        print(kwargs["file"].file.read())
         job_kwargs = kwargs.pop("kwargs", {})
-        self.kwargs = {**kwargs, **job_kwargs}
+        self.kwargs = {**kwargs, **job_kwargs, file: file}
 
     @abstractmethod
     def set_status_as_delivered(self) -> None:

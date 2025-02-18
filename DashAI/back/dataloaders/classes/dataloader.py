@@ -2,25 +2,20 @@
 
 import io
 import logging
+import os
 import zipfile
 from abc import abstractmethod
 from typing import Any, Dict, Final, Union
 
-from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
-from DashAI.back.core.schema_fields import (
-    bool_field,
-    float_field,
-    int_field,
-    schema_field,
-)
-from DashAI.back.core.schema_fields.base_schema import BaseSchema
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 
 logger = logging.getLogger(__name__)
 
 
+"""
 class DatasetSplitsSchema(BaseSchema):
     train_size: schema_field(
         float_field(ge=0.0, le=1.0),
@@ -74,6 +69,8 @@ class DataloaderMoreOptionsSchema(BaseSchema):
         ),
     )  # type: ignore
 
+"""
+
 
 class BaseDataLoader(ConfigObject):
     """Abstract class with base methods for DashAI dataloaders."""
@@ -86,7 +83,7 @@ class BaseDataLoader(ConfigObject):
         filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
-    ) -> DatasetDict:
+    ) -> DashAIDataset:
         """Load data abstract method.
 
         Parameters
@@ -101,8 +98,8 @@ class BaseDataLoader(ConfigObject):
 
         Returns
         -------
-        DatasetDict
-            A HuggingFace's Dataset with the loaded data.
+        DashAIDataset
+            A DashAI Dataset with the loaded data.
         """
         raise NotImplementedError
 
@@ -117,7 +114,13 @@ class BaseDataLoader(ConfigObject):
         -------
             str: Path of the files extracted.
         """
-        if file.content_type == "application/zip":
+        content_types_zip = [
+            "application/x-zip-compressed",
+            "application/zip",
+            "application/zip-compressed",
+            "multipart/x-zip",
+        ]  # Aded for compatibility with different zip file types
+        if file.content_type in content_types_zip:
             files_path = f"{dataset_path}/files"
             with zipfile.ZipFile(
                 file=io.BytesIO(file.file.read()),

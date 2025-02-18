@@ -77,12 +77,10 @@ def create_dataset(client: TestClient):
     test_dataset = "irisDataset.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
     with open(abs_file_path, "rb") as json_file:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "JSONDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "JSONDataLoader",
                                     "name": "test_json",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
@@ -95,9 +93,17 @@ def create_dataset(client: TestClient):
                                         "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", json_file, "text/json")},
+            "url": "",
+        }
+        files = {"file": ("irisDataset.json", json_file, "application/json")}
+        headers = {
+            "filename": "irisDataset.json",
+        }
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
     assert response.status_code == 201, response.text
     dataset = response.json()
@@ -110,20 +116,18 @@ def create_dataset(client: TestClient):
 
 @pytest.fixture(name="dataset_2", autouse=True, scope="module")
 def create_dataset_2(client: TestClient):
-    """Create testing dataset 1."""
+    """Create testing dataset 2."""
     abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
     with open(abs_file_path, "rb") as csv:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "CSVDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "test_csv",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
-                                        "train_size": 0.8,
-                                        "test_size": 0.1,
-                                        "val_size": 0.1
+                                        "train_size": 0.5,
+                                        "test_size": 0.2,
+                                        "val_size": 0.3
                                     },
                                     "separator": ",",
                                     "more_options": {
@@ -132,9 +136,15 @@ def create_dataset_2(client: TestClient):
                                         "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", csv, "text/csv")},
+            "url": "",
+        }
+        files = {"file": ("iris.csv", csv, "text/csv")}
+        headers = {"filename": "iris.csv"}
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
     assert response.status_code == 201, response.text
     dataset = response.json()

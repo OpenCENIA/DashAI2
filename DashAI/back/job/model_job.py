@@ -12,8 +12,12 @@ from transformers import pipeline
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
+    get_column_names_from_indexes,
     load_dataset,
     select_columns,
+    split_dataset,
+    split_indexes,
+    to_dashai_dataset,
     update_dataset_splits,
 )
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
@@ -116,26 +120,51 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                splits = json.loads(experiment.splits)
-                if splits["has_changed"]:
-                    new_splits = {
-                        "train": splits["train"],
-                        "test": splits["test"],
-                        "validation": splits["validation"],
-                    }
-                    loaded_dataset = update_dataset_splits(
-                        loaded_dataset,
-                        new_splits,
-                        splits["is_random"],
-                    )
                 prepared_dataset = task.prepare_for_task(
                     loaded_dataset, experiment.output_columns
                 )
+                splits = json.loads(experiment.splits)
+                splitType = splits.get("splitType")
+                if splitType == "manual" or splitType == "predefined":
+                    splits_index = splits
+                    prepared_dataset = split_dataset(
+                        prepared_dataset,
+                        train_indexes=splits_index["train"],
+                        test_indexes=splits_index["test"],
+                        val_indexes=splits_index["validation"],
+                    )
+                else:
+                    n = len(prepared_dataset)
+                    if splits.get("stratify", False):
+                        output_column = experiment.output_columns[0]
+                        labels = prepared_dataset[output_column]
+                    else:
+                        labels = None
+                    train_indexes, test_indexes, val_indexes = split_indexes(
+                        n,
+                        splits["train"],
+                        splits["test"],
+                        splits["validation"],
+                        shuffle=splits.get("shuffle", False),
+                        seed=splits.get("seed", None),
+                        stratify=splits.get("stratify", False),
+                        labels=labels,
+                    )
+                    prepared_dataset = split_dataset(
+                        prepared_dataset,
+                        train_indexes=train_indexes,
+                        test_indexes=test_indexes,
+                        val_indexes=val_indexes,
+                    )
+
                 x, y = select_columns(
                     prepared_dataset,
                     experiment.input_columns,
                     experiment.output_columns,
                 )
+                x = split_dataset(x)
+                y = split_dataset(y)
+
             except Exception as e:
                 log.exception(e)
                 raise JobError(

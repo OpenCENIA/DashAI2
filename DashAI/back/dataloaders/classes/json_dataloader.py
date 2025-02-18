@@ -15,11 +15,11 @@ from DashAI.back.core.schema_fields import (
     string_field,
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
-from DashAI.back.dataloaders.classes.dataloader import (
-    BaseDataLoader,
-    DataloaderMoreOptionsSchema,
-    DatasetSplitsSchema,
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
 )
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class JSONDataloaderSchema(BaseSchema):
@@ -43,16 +43,15 @@ class JSONDataloaderSchema(BaseSchema):
             "records" orient in pandas), set this value as null.
         """,
     )  # type: ignore
-    splits_in_folders: schema_field(
+    dataset_is_already_split: schema_field(
         bool_field(),
         False,
         (
-            "If your data has folders that define the splits select 'true', "
-            "otherwise 'false'."
+            "If your dataset is already split into training, validation, and test sets,"
+            "upload it as a ZIP file with each split in separate folders. Otherwise, "
+            "upload a single dataset file."
         ),
     )  # type: ignore
-    splits: DatasetSplitsSchema
-    more_options: DataloaderMoreOptionsSchema
 
 
 class JSONDataLoader(BaseDataLoader):
@@ -84,7 +83,7 @@ class JSONDataLoader(BaseDataLoader):
         filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
-    ) -> DatasetDict:
+    ) -> DashAIDataset:
         """Load the uploaded JSON dataset into a DatasetDict.
 
         Parameters
@@ -134,4 +133,4 @@ class JSONDataLoader(BaseDataLoader):
                 finally:
                     os.remove(files_path)
 
-        return dataset
+        return to_dashai_dataset(dataset)

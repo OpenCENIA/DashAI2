@@ -35,14 +35,14 @@ def splited_dataset_fixture():
     datasetdict = to_dashai_dataset(datasetdict)
 
     train_idx, test_idx, val_idx = split_indexes(
-        total_rows=len(datasetdict["train"]),
+        total_rows=len(datasetdict),
         train_size=0.6,
         test_size=0.2,
         val_size=0.2,
     )
 
     splited_dataset = split_dataset(
-        datasetdict["train"],
+        datasetdict,
         train_indexes=train_idx,
         test_indexes=test_idx,
         val_indexes=val_idx,
@@ -53,6 +53,8 @@ def splited_dataset_fixture():
         ["text"],
         ["class"],
     )
+    x = split_dataset(x)
+    y = split_dataset(y)
     y["train"] = y["train"].map(lambda example: {"class": int(example["class"])})
     y["test"] = y["test"].map(lambda example: {"class": int(example["class"])})
     y["validation"] = y["validation"].map(
@@ -66,7 +68,7 @@ def splited_dataset_fixture():
 def sample_model():
     model = DistilBertTransformer(
         num_train_epochs=2,
-        batch_size=32,
+        batch_size=16,
         learning_rate=5e-5,
         device="gpu",
         weight_decay=0.01,

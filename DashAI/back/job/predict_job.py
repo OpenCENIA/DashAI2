@@ -11,11 +11,7 @@ from kink import di, inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session, sessionmaker
 
-from DashAI.back.dataloaders.classes.dashai_dataset import (
-    DashAIDataset,
-    concatenate_dataset_splits,
-    load_dataset,
-)
+from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, load_dataset
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
 from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.base_job import BaseJob, JobError
@@ -85,9 +81,6 @@ class PredictJob(BaseJob):
             loaded_dataset: DashAIDataset = load_dataset(
                 str(Path(f"{dataset.file_path}/dataset/"))
             )
-            loaded_dataset: DashAIDataset = concatenate_dataset_splits(loaded_dataset)[
-                "train"
-            ]
         except Exception as e:
             log.exception(e)
             raise JobError(

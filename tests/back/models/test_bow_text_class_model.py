@@ -40,14 +40,14 @@ def splited_dataset_fixture():
     datasetdict = to_dashai_dataset(datasetdict)
 
     train_idx, test_idx, val_idx = split_indexes(
-        total_rows=len(datasetdict["train"]),
+        total_rows=datasetdict.num_rows,
         train_size=0.6,
         test_size=0.2,
         val_size=0.2,
     )
 
     splited_dataset = split_dataset(
-        datasetdict["train"],
+        datasetdict,
         train_indexes=train_idx,
         test_indexes=test_idx,
         val_indexes=val_idx,
@@ -58,6 +58,8 @@ def splited_dataset_fixture():
         ["text"],
         ["class"],
     )
+    x = split_dataset(x)
+    y = split_dataset(y)
 
     return (x, y)
 
@@ -130,7 +132,7 @@ def test_predict_model(
     sample_model.vectorizer.fit(x[input_column])
     vectorizer_func = sample_model.get_vectorizer(input_column)
     vectorized_dataset = x.map(vectorizer_func, remove_columns="text")
-    vectorized_dataset = DashAIDataset(vectorized_dataset.data)
+    vectorized_dataset = to_dashai_dataset(vectorized_dataset)
     sample_model.classifier.fit(vectorized_dataset, y["test"])
     predictions = sample_model.predict(x)
     assert isinstance(predictions, np.ndarray)

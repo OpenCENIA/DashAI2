@@ -55,7 +55,9 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
   const handleSubmitNewDataset = async () => {
     try {
       const formData = new FormData();
-
+      if (newDataset.params.name === null) {
+        newDataset.params.name = newDataset.file.name;
+      }
       formData.append(
         "params",
         JSON.stringify({
@@ -65,7 +67,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      const dataset = await uploadDatasetRequest(formData);
+      const filename = newDataset.file.name;
+      const dataset = await uploadDatasetRequest(formData, filename);
       setUploadedDataset(dataset);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
       updateDatasets();

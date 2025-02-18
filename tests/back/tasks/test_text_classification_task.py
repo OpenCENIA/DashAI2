@@ -22,12 +22,10 @@ def create_dataset(client: TestClient):
     test_dataset = "ImdbSentimentDatasetSmall.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
     with open(abs_file_path, "rb") as json_file:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "JSONDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "JSONDataLoader",
                                     "name": "test_json",
-                                    "splits_in_folders": false,
+                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
@@ -36,13 +34,23 @@ def create_dataset(client: TestClient):
                                     "data_key": "data",
                                     "more_options": {
                                         "seed": 42,
-                                        "shuffle": true,
-                                        "stratify": true
+                                        "shuffle": false,
+                                        "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", json_file, "text/json")},
+            "url": "",
+        }
+        files = {
+            "file": ("ImdbSentimentDatasetSmall.json", json_file, "application/json")
+        }
+        headers = {
+            "filename": "ImdbSentimentDatasetSmall.json",
+        }
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
     assert response.status_code == 201, response.text
     dataset = response.json()

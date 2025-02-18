@@ -12,7 +12,10 @@ from DashAI.back.core.schema_fields import (
     int_field,
     schema_field,
 )
-from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
@@ -202,16 +205,18 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
         self.vectorizer.fit(x[input_column])
         tokenizer_func = self.get_vectorizer(input_column)
         tokenized_dataset = x.map(tokenizer_func, remove_columns="text")
+        tokenized_dataset = to_dashai_dataset(tokenized_dataset)
 
-        self.classifier.fit(DashAIDataset(tokenized_dataset.data), y)
+        self.classifier.fit(tokenized_dataset, y)
 
     def predict(self, x: Dataset):
         input_column = x.column_names[0]
 
         tokenizer_func = self.get_vectorizer(input_column)
         tokenized_dataset = x.map(tokenizer_func, remove_columns="text")
+        tokenized_dataset = to_dashai_dataset(tokenized_dataset)
 
-        return self.classifier.predict(DashAIDataset(tokenized_dataset.data))
+        return self.classifier.predict(tokenized_dataset)
 
     def save(self, filename: Union[str, Path]) -> None:
         """Save the model in the specified path."""

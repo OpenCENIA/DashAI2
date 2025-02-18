@@ -38,10 +38,7 @@ def load_csv_into_datasetdict(file_name):
 def test_validate_tabular_task():
     dataset = to_dashai_dataset(load_csv_into_datasetdict("iris.csv"))
 
-    for split in dataset:
-        dataset[split] = dataset[split].change_columns_type(
-            column_types={"Species": "Categorical"}
-        )
+    dataset = dataset.change_columns_type(column_types={"Species": "Categorical"})
     tabular_task = TabularClassificationTask()
     inputs_columns = [
         "SepalLengthCm",
@@ -64,10 +61,7 @@ def test_validate_tabular_task():
 def test_wrong_type_task():
     dataset = to_dashai_dataset(load_csv_into_datasetdict("iris_extra_feature.csv"))
 
-    for split in dataset:
-        dataset[split] = dataset[split].change_columns_type(
-            column_types={"Species": "Categorical"}
-        )
+    dataset = dataset.change_columns_type(column_types={"Species": "Categorical"})
 
     tabular_task = TabularClassificationTask()
 
@@ -158,12 +152,12 @@ def text_classification_dataset_fixture():
 
     dashai_dataset = to_dashai_dataset(dataset)
 
-    total_rows = len(dashai_dataset["train"])
+    total_rows = dashai_dataset.num_rows
     train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_datasetdict = split_dataset(
-        dashai_dataset["train"],
+        dashai_dataset,
         train_indexes=train_indexes,
         test_indexes=test_indexes,
         val_indexes=val_indexes,
@@ -220,12 +214,12 @@ def image_classification_dataset_fixture():
 
     dataset = to_dashai_dataset(dataset_dict)
 
-    total_rows = len(dataset["train"])
+    total_rows = dataset.num_rows
     train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_datasetdict = split_dataset(
-        dataset["train"],
+        dataset,
         train_indexes=train_indexes,
         test_indexes=test_indexes,
         val_indexes=val_indexes,
@@ -282,12 +276,12 @@ def translation_dataset_fixture():
 
     dataset = to_dashai_dataset(dataset)
 
-    total_rows = len(dataset["train"])
+    total_rows = dataset.num_rows
     train_indexes, test_indexes, val_indexes = split_indexes(
         total_rows=total_rows, train_size=0.7, test_size=0.1, val_size=0.2
     )
     split_datasetdict = split_dataset(
-        dataset["train"],
+        dataset,
         train_indexes=train_indexes,
         test_indexes=test_indexes,
         val_indexes=val_indexes,

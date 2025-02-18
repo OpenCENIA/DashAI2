@@ -26,7 +26,8 @@
         }
       ]
     },
-    "splits_in_folders": {
+    "": {
+      "dataset_is_already_split": {
       "oneOf": [
         {
           "error_msg": "Need to select 'true' if you have folders that define the splits, otherwise 'false'.",

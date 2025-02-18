@@ -1,9 +1,13 @@
 """DashAI Translation Task."""
 
-from typing import List
+from typing import List, Union
 
 from datasets import DatasetDict, Sequence, Value
 
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 from DashAI.back.tasks.base_task import BaseTask
 
 
@@ -26,8 +30,8 @@ class TranslationTask(BaseTask):
     """
 
     def prepare_for_task(
-        self, datasetdict: DatasetDict, outputs_columns: List[str]
-    ) -> DatasetDict:
+        self, datasetdict: Union[DatasetDict, DashAIDataset], outputs_columns: List[str]
+    ) -> DashAIDataset:
         """Change the column types to suit the tabular classification task.
 
         A copy of the dataset is created.
@@ -39,7 +43,7 @@ class TranslationTask(BaseTask):
 
         Returns
         -------
-        DatasetDict
+        DashAIDataset
             Dataset with the new types
         """
-        return datasetdict
+        return to_dashai_dataset(datasetdict)

@@ -6,6 +6,10 @@ from beartype import beartype
 from datasets import DatasetDict, load_dataset
 from starlette.datastructures import UploadFile
 
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
+)
 from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
@@ -20,7 +24,7 @@ class ImageDataLoader(BaseDataLoader):
         filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
-    ) -> DatasetDict:
+    ) -> DashAIDataset:
         """Load an image dataset.
 
         Parameters
@@ -55,4 +59,4 @@ class ImageDataLoader(BaseDataLoader):
                     f"{filepath_or_buffer.content_type}"
                 )
 
-        return dataset
+        return to_dashai_dataset(dataset)

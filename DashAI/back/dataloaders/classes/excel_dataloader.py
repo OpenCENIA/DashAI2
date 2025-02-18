@@ -19,11 +19,11 @@ from DashAI.back.core.schema_fields import (
     union_type,
 )
 from DashAI.back.core.schema_fields.base_schema import BaseSchema
-from DashAI.back.dataloaders.classes.dataloader import (
-    BaseDataLoader,
-    DataloaderMoreOptionsSchema,
-    DatasetSplitsSchema,
+from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
+    to_dashai_dataset,
 )
+from DashAI.back.dataloaders.classes.dataloader import BaseDataLoader
 
 
 class ExcelDataloaderSchema(BaseSchema):
@@ -64,8 +64,6 @@ class ExcelDataloaderSchema(BaseSchema):
         ranges (e.g. “A:E” or “A,C,E:F”). Ranges are inclusive of both sides.
         """,
     )  # type: ignore
-    splits: DatasetSplitsSchema
-    more_options: DataloaderMoreOptionsSchema
 
 
 class ExcelDataLoader(BaseDataLoader):
@@ -80,7 +78,7 @@ class ExcelDataLoader(BaseDataLoader):
         filepath_or_buffer: Union[UploadFile, str],
         temp_path: str,
         params: Dict[str, Any],
-    ) -> DatasetDict:
+    ) -> DashAIDataset:
         """Load the uploaded Excel files into a DatasetDict.
 
         Parameters
@@ -187,4 +185,4 @@ class ExcelDataLoader(BaseDataLoader):
                 finally:
                     os.remove(file_path)
 
-        return dataset_dict
+        return to_dashai_dataset(dataset_dict)

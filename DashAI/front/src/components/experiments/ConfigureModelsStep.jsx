@@ -41,12 +41,10 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   };
 
   const handleAddButton = () => {
-    // Calcular el número de modelos existentes del mismo tipo
     const existingModelsOfType = newExp.runs.filter(
       (run) => run.model === selectedModel,
     ).length;
 
-    // Generar nombre automático si no se ingresó uno
     const modelName =
       name.trim() === ""
         ? `${selectedModel}_${existingModelsOfType + 1}`
@@ -99,7 +97,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         </Typography>
       </Grid>
 
-      {/* Form to add a single model to the experiment */}
       <Grid item xs={12}>
         <Grid container direction="row" columnSpacing={3} wrap="nowrap">
           <Grid item xs={4} md={12}>
@@ -107,12 +104,10 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
               label="Name (optional)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={
-                selectedModel ? `Ej: ${selectedModel}_1` : "Ej: Modelo_1"
-              }
+              placeholder={selectedModel ? `${selectedModel}_1` : "Model_1"}
+              InputLabelProps={{ shrink: true }}
               fullWidth
               key={selectedModel}
-              InputLabelProps={{ shrink: true }}
             />
           </Grid>
 
@@ -165,8 +160,6 @@ ConfigureModelsStep.propTypes = {
     input_columns: PropTypes.arrayOf(PropTypes.number),
     output_columns: PropTypes.arrayOf(PropTypes.number),
     splits: PropTypes.shape({
-      has_changed: PropTypes.bool,
-      is_random: PropTypes.bool,
       training: PropTypes.number,
       validation: PropTypes.number,
       testing: PropTypes.number,

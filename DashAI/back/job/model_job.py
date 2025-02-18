@@ -4,9 +4,11 @@ import os
 import pickle
 from typing import List
 
+import numpy as np
 from kink import inject
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
+from transformers import pipeline
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -19,6 +21,7 @@ from DashAI.back.dependencies.registry import ComponentRegistry
 from DashAI.back.job.base_job import BaseJob, JobError
 from DashAI.back.metrics import BaseMetric
 from DashAI.back.models import BaseModel
+from DashAI.back.models.model_factory import ModelFactory
 from DashAI.back.optimizers import BaseOptimizer
 from DashAI.back.tasks import BaseTask
 
@@ -148,70 +151,10 @@ class ModelJob(BaseJob):
                     f"Unable to find Model with name {run.model_name} in registry.",
                 ) from e
             try:
-                if experiment.task_name not in [
-                    "TextClassificationTask",
-                    "TabularClassificationTask",
-                ]:
-                    run_fixed_parameters = run.parameters
-                    run_optimizable_parameters = {}
-                    model: BaseModel = run_model_class(**run_fixed_parameters)
-                elif experiment.task_name == "TextClassificationTask":
-                    # Divide the parameters in fixed and optimizable
-                    run_fixed_parameters = {
-                        key: (
-                            parameter["fixed_value"]
-                            if isinstance(parameter, dict) and "optimize" in parameter
-                            else parameter
-                        )
-                        for key, parameter in run.parameters["tabular_classifier"][
-                            "properties"
-                        ]["params"]["comp"]["params"].items()
-                        if (
-                            isinstance(parameter, dict)
-                            and parameter.get("optimize") is False
-                        )
-                        or isinstance(parameter, (bool, str))
-                    }
-                    run_optimizable_parameters = {
-                        key: (parameter["lower_bound"], parameter["upper_bound"])
-                        for key, parameter in run.parameters["tabular_classifier"][
-                            "properties"
-                        ]["params"]["comp"]["params"].items()
-                        if (
-                            isinstance(parameter, dict)
-                            and parameter.get("optimize") is True
-                        )
-                    }
-                    submodel: BaseModel = component_registry[
-                        run.parameters["tabular_classifier"]["properties"]["params"][
-                            "comp"
-                        ]["component"]
-                    ]["class"](**run_fixed_parameters)
-                    model: BaseModel = run_model_class(submodel, **run.parameters)
+                factory = ModelFactory(run_model_class, run.parameters)
+                model: BaseModel = factory.model
+                run_optimizable_parameters = factory.optimizable_parameters
 
-                else:
-                    run_fixed_parameters = {
-                        key: (
-                            parameter["fixed_value"]
-                            if isinstance(parameter, dict) and "optimize" in parameter
-                            else parameter
-                        )
-                        for key, parameter in run.parameters.items()
-                        if (
-                            isinstance(parameter, dict)
-                            and parameter.get("optimize") is False
-                        )
-                        or isinstance(parameter, (bool, str))
-                    }
-                    run_optimizable_parameters = {
-                        key: (parameter["lower_bound"], parameter["upper_bound"])
-                        for key, parameter in run.parameters.items()
-                        if (
-                            isinstance(parameter, dict)
-                            and parameter.get("optimize") is True
-                        )
-                    }
-                    model: BaseModel = run_model_class(**run_fixed_parameters)
             except Exception as e:
                 log.exception(e)
                 raise JobError(
@@ -320,16 +263,7 @@ class ModelJob(BaseJob):
                 ) from e
 
             try:
-                model_metrics = {
-                    split: {
-                        metric.__name__: metric.score(
-                            y[split],
-                            model.predict(x[split]),
-                        )
-                        for metric in metrics
-                    }
-                    for split in ["train", "validation", "test"]
-                }
+                model_metrics = factory.evaluate(x, y, metrics)
             except Exception as e:
                 log.exception(e)
                 raise JobError(

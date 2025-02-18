@@ -1,5 +1,6 @@
 import io
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -7,6 +8,7 @@ from datasets import DatasetDict
 from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
+    DashAIDataset,
     select_columns,
     split_dataset,
     split_indexes,
@@ -14,10 +16,10 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
 )
 from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.models import RandomForestClassifier
+from DashAI.back.models.model_factory import ModelFactory
 from DashAI.back.models.scikit_learn.bow_text_classification_model import (
     BagOfWordsTextClassificationModel,
 )
-from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 
 
 @pytest.fixture(scope="module", name="splited_dataset")
@@ -79,33 +81,77 @@ def model_params_fixture() -> dict:
     }
 
 
-def test_predict_tabular_models(splited_dataset: DatasetDict, model_params: dict):
+@pytest.fixture(name="sample_model")
+def model_fixture(model_params: dict):
+    bowtc_model = BagOfWordsTextClassificationModel
+    factory = ModelFactory(bowtc_model, model_params)
+    return factory.model
+
+
+def test_model_initialization(sample_model: BagOfWordsTextClassificationModel):
+    assert sample_model.classifier is not None
+    assert sample_model.vectorizer is not None
+    assert isinstance(sample_model, BagOfWordsTextClassificationModel)
+    assert isinstance(sample_model.classifier, RandomForestClassifier)
+    assert sample_model.vectorizer.ngram_range == (1, 1)
+
+
+def test_vectorize_text(
+    splited_dataset: DatasetDict, sample_model: BagOfWordsTextClassificationModel
+):
     x, y = splited_dataset
-    submodel = RandomForestClassifier(**model_params["tabular_classifier"]["params"])
-    bowtc_model = BagOfWordsTextClassificationModel(submodel, **model_params)
-    bowtc_model.fit(x["train"], y["train"])
-
-    y_pred_bowtcm = bowtc_model.predict(x["test"])
-
-    assert isinstance(y_pred_bowtcm, np.ndarray)
-
-    assert y["test"].num_rows == len(y_pred_bowtcm)
+    x = x["train"]
+    input_column = x.column_names[0]
+    sample_model.vectorizer.fit(x[input_column])
+    vectorizer_func = sample_model.get_vectorizer(input_column)
+    vectorized_dataset = x.map(vectorizer_func, remove_columns="text")
+    assert len(vectorized_dataset) > 0
+    assert "text0" in vectorized_dataset.column_names
 
 
-def test_save_and_load_model(splited_dataset: DatasetDict, model_params: dict):
+def test_fit_model(
+    splited_dataset: DatasetDict, sample_model: BagOfWordsTextClassificationModel
+):
     x, y = splited_dataset
-    submodel = RandomForestClassifier(**model_params["tabular_classifier"]["params"])
-    bowtc_model = BagOfWordsTextClassificationModel(submodel, **model_params)
-    bowtc_model.fit(x["train"], y["train"])
+    x = x["train"]
+    y = y["train"]
+    sample_model.fit(x, y)
 
-    nwft_filename = "tests/back/models/nwft_model"
-    bowtc_model.save(nwft_filename)
-    loaded_model = SklearnLikeModel.load(nwft_filename)
+    assert hasattr(sample_model.vectorizer, "vocabulary_")
+    assert hasattr(sample_model.classifier, "estimators_")
 
-    y_pred_bowtcm = loaded_model.predict(x["test"])
 
-    assert isinstance(y_pred_bowtcm, np.ndarray)
-    assert y["test"].num_rows == len(y_pred_bowtcm)
+def test_predict_model(
+    splited_dataset: DatasetDict, sample_model: BagOfWordsTextClassificationModel
+):
+    x, y = splited_dataset
+    x = x["test"]
+    input_column = x.column_names[0]
+    sample_model.vectorizer.fit(x[input_column])
+    vectorizer_func = sample_model.get_vectorizer(input_column)
+    vectorized_dataset = x.map(vectorizer_func, remove_columns="text")
+    vectorized_dataset = DashAIDataset(vectorized_dataset.data)
+    sample_model.classifier.fit(vectorized_dataset, y["test"])
+    predictions = sample_model.predict(x)
+    assert isinstance(predictions, np.ndarray)
+    assert len(predictions) == len(y["test"])
+
+
+def test_save_and_load_model(
+    splited_dataset: DatasetDict,
+    sample_model: BagOfWordsTextClassificationModel,
+    tmp_path: Path,
+):
+    x, y = splited_dataset
+    sample_model.fit(x["train"], y["train"])
+    nwft_filename = os.path.join(tmp_path, "nwft_model")
+    sample_model.save(nwft_filename)
+    loaded_model = sample_model.load(nwft_filename)
+
+    original_predictions = sample_model.predict(x["test"])
+    loaded_predictions = loaded_model.predict(x["test"])
+
+    assert np.array_equal(original_predictions, loaded_predictions)
 
     os.remove(nwft_filename)
 

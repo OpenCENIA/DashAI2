@@ -21,7 +21,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
   const [compatibleModels, setCompatibleModels] = useState([]);
 
   const { defaultValues } = useSchema({ modelName: selectedModel });
-
   const getCompatibleModels = async () => {
     try {
       const models = await getComponentsRequest({
@@ -63,7 +62,6 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
         n_trials: 10,
         sampler: "TPESampler",
         pruner: "None",
-        metric: "auto",
       },
     };
 
@@ -74,7 +72,8 @@ function ConfigureModelsStep({ newExp, setNewExp, setNextEnabled }) {
 
   // checks if there is at least 1 model added to enable the "Next" button
   useEffect(() => {
-    if (newExp.runs.length > 0) {
+    const allModelsHaveMetric = newExp.runs.every((model) => model.goal_metric);
+    if (newExp.runs.length && allModelsHaveMetric) {
       setNextEnabled(true);
     } else {
       setNextEnabled(false);

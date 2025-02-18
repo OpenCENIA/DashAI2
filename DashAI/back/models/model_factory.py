@@ -31,6 +31,18 @@ class ModelFactory:
         if hasattr(self.model, "optimizable_params"):
             self.optimizable_parameters = self.model.optimizable_params
 
+        # update the model's fit method to set the fitted attribute to True
+        if hasattr(self.model, "fit"):
+            original_fit = self.model.fit
+            factory = self
+
+            def wrapped_fit(*args, **kwargs):
+                result = original_fit(*args, **kwargs)
+                factory.fitted = True
+                return result
+
+            self.model.fit = wrapped_fit
+
     def _extract_parameters(self, parameters: dict) -> dict:
         """
         Extract fixed and optimizable parameters from a dictionary.
@@ -63,11 +75,6 @@ class ModelFactory:
             if isinstance(param, dict) and param.get("optimize") is True
         }
         return fixed_params, optimizable_params
-
-    def fit(self, x_train, y_train):
-        """Fit the model to the training data and set fitted=True."""
-        self.model.fit(x_train, y_train)
-        self.fitted = True
 
     def evaluate(self, x, y, metrics):
         """Computes metrics only if the model is fitted."""

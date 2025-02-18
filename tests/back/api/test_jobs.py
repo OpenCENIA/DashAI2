@@ -174,9 +174,13 @@ def create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            "goal_metric": "Accuracy",
             "description": "This is a test run",
+            "plot_history_path": "path/to/history.png",  # Missing fields
+            "plot_slice_path": "path/to/slice.png",
+            "plot_contour_path": "path/to/contour.png",
+            "plot_importance_path": "path/to/importance.png",
         },
     )
     assert response.status_code == 201, response.text
@@ -203,8 +207,8 @@ def create_failed_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            goal_metric="Accuracy",
             name="DummyRun2",
         )
         db.add(run)

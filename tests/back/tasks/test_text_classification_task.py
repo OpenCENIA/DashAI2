@@ -112,6 +112,7 @@ def create_run_id(client: TestClient, experiment_id: int):
                 "weight_decay": 0.0,
             },
             name="Run",
+            goal_metric="accuracy",
         )
         db.add(run)
         db.commit()

@@ -59,12 +59,19 @@ def translation_dataset_fixture():
 def sample_model() -> OpusMtEnESTransformer:
     model = OpusMtEnESTransformer(
         num_train_epochs=1,
-        batch_size=16,
+        batch_size=4,
         learning_rate=2e-5,
         device="gpu",
         weight_decay=0.01,
     )
     return model
+
+
+@pytest.fixture(autouse=True)
+def clear_cuda_cache():
+    yield
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
 
 
 def test_model_initialization(sample_model):

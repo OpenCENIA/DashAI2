@@ -8,6 +8,8 @@ from DashAI.back.tasks.base_task import BaseTask
 class TextClassificationTask(BaseTask):
     """Base class for Text Classification Task."""
 
+    COMPATIBLE_COMPONENTS = ["Accuracy", "F1", "Precision", "Recall"]
+
     metadata: dict = {
         "inputs_types": [Value],
         "outputs_types": [ClassLabel],

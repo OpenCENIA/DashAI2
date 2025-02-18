@@ -193,11 +193,11 @@ def create_run_id(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "Accuracy",
             },
             model_name="KNeighborsClassifier",
             parameters={},
             name="Run",
+            goal_metric="Accuracy",
         )
         db.add(run)
         db.commit()

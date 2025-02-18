@@ -197,10 +197,10 @@ def create_run_id(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "Accuracy",
             },
             model_name="DummyModel",
             parameters={},
+            goal_metric="Accuracy",
             name="Run",
         )
         db.add(run)

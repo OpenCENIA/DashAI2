@@ -86,9 +86,13 @@ def test_create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            "goal_metric": "Accuracy",
             "description": "This is a test run",
+            "plot_history_path": "path/to/history.png",  # Add missing fields
+            "plot_slice_path": "path/to/slice.png",
+            "plot_contour_path": "path/to/contour.png",
+            "plot_importance_path": "path/to/importance.png",
         },
     )
     assert response.status_code == 201
@@ -108,9 +112,13 @@ def test_create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            "goal_metric": "Accuracy",
             "description": "This is a test run",
+            "plot_history_path": "path/to/history.png",  # Add missing fields
+            "plot_slice_path": "path/to/slice.png",
+            "plot_contour_path": "path/to/contour.png",
+            "plot_importance_path": "path/to/importance.png",
         },
     )
     assert response.status_code == 201

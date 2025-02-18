@@ -222,7 +222,7 @@ def test_sample_dashaidataset(dashai_datasetdict: list, method: str, n_samples: 
         (
             {"sepal length (cm)": "Categorical"},
             ArrowInvalid,
-            r"Float value .{2,5} was truncated converting to int64",
+            r"Float value \d+\.\d+ was truncated converting to int64",
         ),
     ],
     ids=[

@@ -47,7 +47,6 @@ class TextClassificationTask(BaseTask):
             Dataset with the new types
         """
         types = {column: "Categorical" for column in outputs_columns}
-        print("AKA TAN LOS TIPOS", types)
         datasetdict = to_dashai_dataset(datasetdict)
         dataset = datasetdict.change_columns_type(types)
         return dataset

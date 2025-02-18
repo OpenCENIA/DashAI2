@@ -11,10 +11,8 @@ def create_dataset(client):
     abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
     with open(abs_file_path, "rb") as csv:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "CSVDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "DummyDataset2",
                                     "dataset_is_already_split": false,
                                     "splits": {
@@ -29,9 +27,15 @@ def create_dataset(client):
                                         "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", csv, "text/csv")},
+            "url": "",
+        }
+        files = {"file": ("iris.csv", csv, "text/csv")}
+        headers = {"filename": "iris.csv"}
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
     return response.json()["id"]
 

@@ -67,7 +67,8 @@ function DatasetModal({ open, setOpen, updateDatasets }) {
       );
       formData.append("url", ""); // TODO: url handling
       formData.append("file", newDataset.file);
-      const dataset = await uploadDatasetRequest(formData);
+      const filename = newDataset.file.name;
+      const dataset = await uploadDatasetRequest(formData, filename);
       setUploadedDataset(dataset);
       enqueueSnackbar("Dataset uploaded successfully", { variant: "success" });
       updateDatasets();

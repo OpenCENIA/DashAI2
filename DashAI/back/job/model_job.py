@@ -133,8 +133,11 @@ class ModelJob(BaseJob):
                     )
                 else:
                     n = len(prepared_dataset)
-                    output_column = experiment.output_columns[0]
-                    labels = prepared_dataset[output_column]
+                    if splits.get("stratify", False):
+                        output_column = experiment.output_columns[0]
+                        labels = prepared_dataset[output_column]
+                    else:
+                        labels = None
                     train_indexes, test_indexes, val_indexes = split_indexes(
                         n,
                         splits["train"],

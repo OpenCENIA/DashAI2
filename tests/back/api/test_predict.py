@@ -79,10 +79,8 @@ def create_dataset(client: TestClient):
     test_dataset = "irisDataset.json"
     abs_file_path = os.path.join(script_dir, test_dataset)
     with open(abs_file_path, "rb") as json_file:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "JSONDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "JSONDataLoader",
                                     "name": "test_json",
                                     "dataset_is_already_split": false,
                                     "splits": {
@@ -96,9 +94,15 @@ def create_dataset(client: TestClient):
                                         "shuffle": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", json_file, "text/json")},
+            "url": "",
+        }
+        files = {"file": ("irisDataset.json", json_file, "text/json")}
+        headers = {"filename": "irisDataset.json"}
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
     assert response.status_code == 201, response.text
     dataset = response.json()
@@ -202,9 +206,7 @@ def test_make_prediction(
     with open(abs_file_path, "rb") as json_file:
         response = client.post(
             "/api/v1/predict/",
-            params={
-                "run_id": trained_run_id,
-            },
+            params={"run_id": trained_run_id},
             files={"input_file": ("filename", json_file, "text/json")},
         )
         data = response.json()

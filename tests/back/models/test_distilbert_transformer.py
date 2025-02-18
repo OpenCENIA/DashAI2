@@ -97,8 +97,6 @@ def test_fit(sample_model, splited_dataset):
     x_train, y_train = splited_dataset
     x_train = x_train["train"]
     y_train = y_train["train"]
-    print(x_train)
-    print(y_train)
     assert all(isinstance(label, int) for label in y_train["class"])
     sample_model.fit(x_train, y_train)
     assert sample_model.fitted is True

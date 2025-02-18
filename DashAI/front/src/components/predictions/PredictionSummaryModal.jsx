@@ -35,6 +35,9 @@ function PredictionSummaryModal({ predictName }) {
     try {
       const summary = await getPredictSummaryRequest(predictName);
       setSummary(summary);
+      if (summary.data_type === "string") {
+        setActiveTab(1);
+      }
     } catch (error) {
       enqueueSnackbar("Error when trying to get the prediction summary");
       setError(true);
@@ -86,18 +89,30 @@ function PredictionSummaryModal({ predictName }) {
             onClick={(event) => event.stopPropagation()}
           >
             <Grid item xs={12}>
-              <Tabs
-                value={activeTab}
-                onChange={handleTabChange}
-                aria-label="Prediction Tabs"
-                centered
-                sx={{ mb: 3 }}
-              >
-                <Tab label="Summary" />
-                <Tab label="Sample" />
-              </Tabs>
-              {activeTab === 0 && <PredictionSummaryTab summary={summary} />}
-              {activeTab == 1 && <PredictionSampleTab summary={summary} />}
+              {summary.data_type !== "string" && (
+                <Tabs
+                  value={activeTab}
+                  onChange={handleTabChange}
+                  aria-label="Prediction Tabs"
+                  centered
+                  sx={{ mb: 3 }}
+                >
+                  <Tab label="Summary" />
+                  <Tab label="Sample" />
+                </Tabs>
+              )}
+              {summary.data_type === "string" ? (
+                <PredictionSampleTab summary={summary} />
+              ) : (
+                <>
+                  {activeTab === 0 && (
+                    <PredictionSummaryTab summary={summary} />
+                  )}
+                  {activeTab === 1 && (
+                    <PredictionSampleTab summary={summary} type={"numeric"} />
+                  )}
+                </>
+              )}
             </Grid>
           </Grid>
         </DialogContent>

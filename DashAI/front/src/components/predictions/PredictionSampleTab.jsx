@@ -25,7 +25,7 @@ import ResultsTabInfo from "../../pages/results/components/ResultsTabInfo";
 import handleCloseCustomLayout from "../../pages/results/components/ResultsTabInfo";
 import { useSnackbar } from "notistack";
 
-function PredictionSampleTab({ summary }) {
+function PredictionSampleTab({ summary, type }) {
   const [open, setOpen] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
   const [error, setError] = useState(false);
@@ -33,20 +33,33 @@ function PredictionSampleTab({ summary }) {
     setOpen(false);
   };
 
-  const columns = React.useMemo(() => [
-    {
-      field: "id",
-      headerName: "Row",
-      minWidth: 30,
-      editable: false,
-    },
-    {
-      field: "value",
-      headerName: "Value",
-      minWidth: 100,
-      editable: false,
-    },
-  ]);
+  const columns = React.useMemo(() => {
+    const commonColumns = [
+      {
+        field: "id",
+        headerName: "Row",
+        minWidth: 30,
+        editable: false,
+      },
+    ];
+
+    const typeSpecificColumn =
+      type === "numeric"
+        ? {
+            field: "value",
+            headerName: "Value",
+            minWidth: 100,
+            editable: false,
+          }
+        : {
+            field: "value",
+            headerName: "Text",
+            minWidth: 500,
+            editable: false,
+          };
+
+    return [...commonColumns, typeSpecificColumn];
+  }, [type]);
 
   const rows = summary["sample_data"] || [];
 

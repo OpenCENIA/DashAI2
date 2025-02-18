@@ -101,10 +101,12 @@ class PredictJob(BaseJob):
             raise JobError(f"Model {run.model_name} not found in the registry") from e
 
         try:
-            y_pred_proba = np.array(
-                trained_model.predict(loaded_dataset.select_columns(exp.input_columns))
-            )
-            y_pred = np.argmax(y_pred_proba, axis=1)
+            prepared_dataset = loaded_dataset.select_columns(exp.input_columns)
+            y_pred_proba = np.array(trained_model.predict(prepared_dataset))
+            if isinstance(y_pred_proba[0], str):
+                y_pred = y_pred_proba
+            else:
+                y_pred = np.argmax(y_pred_proba, axis=1)
 
         except ValueError as ve:
             log.error(f"Validation Error: {ve}")

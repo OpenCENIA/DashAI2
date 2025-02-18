@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Grid, Paper, Typography, TextField } from "@mui/material";
+import { Grid, Paper, Typography, TextField, Hidden } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import { useSnackbar } from "notistack";
 import { get_model_table } from "../../api/predict";
@@ -24,26 +24,20 @@ function SelectModelStep({
     {
       field: "id",
       headerName: "ID",
-      minWidth: 30,
-      editable: false,
-    },
-    {
-      field: "experiment_name",
-      headerName: "Experiment Name",
-      minWidth: 170,
+      minWidth: 10,
       editable: false,
     },
 
     {
       field: "run_name",
       headerName: "Model Name",
-      minWidth: 170,
+      minWidth: 300,
       editable: false,
     },
     {
       field: "model_name",
       headerName: "Model",
-      minWidth: 200,
+      minWidth: 300,
       editable: false,
     },
     {

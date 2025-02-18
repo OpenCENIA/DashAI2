@@ -146,7 +146,7 @@ async def get_model_table(
     with session_factory() as db:
         query_results = (
             db.query(
-                Experiment.id.label("experiment_id"),
+                Run.id.label("run_id"),
                 Experiment.name.label("experiment_name"),
                 Experiment.created,
                 Experiment.task_name,
@@ -167,7 +167,7 @@ async def get_model_table(
 
         prediction_data = [
             {
-                "id": result.experiment_id,
+                "id": result.run_id,
                 "experiment_name": result.experiment_name,
                 "created": result.created,
                 "run_name": result.run_name,
@@ -196,32 +196,40 @@ async def get_predict_summary(
                 raise HTTPException(
                     status_code=400, detail="Invalid JSON format"
                 ) from e
+
             summary["total_data_points"] = len(data)
-            class_set = set(data)
-            classes = [str(item) for item in class_set]
-            summary["Unique_classes"] = len(classes)
-            class_distribution = []
-            id = 1
-            for class_name in classes:
-                try:
-                    occurrences = data.count(int(class_name))
-                except ValueError as e:
-                    raise HTTPException(
-                        status_code=400, detail=f"Invalid class value: {class_name}"
-                    ) from e
-                distribution = {
-                    "id": id,
-                    "Class": class_name,
-                    "Ocurrences": occurrences,
-                    "Percentage": round(occurrences / len(data) * 100, 2),
-                }
-                id += 1
-                class_distribution.append(distribution)
-            summary["class_distribution"] = class_distribution
-        sample_data = [
-            {"id": idx, "value": value} for idx, value in enumerate(data[:50], 1)
-        ]
-        summary["sample_data"] = sample_data
+
+            # Verificar si los datos son strings
+            if isinstance(data[0], str):
+                summary["data_type"] = "string"
+            else:
+                summary["data_type"] = "numeric"
+                class_set = set(data)
+                classes = [str(item) for item in class_set]
+                summary["Unique_classes"] = len(classes)
+                class_distribution = []
+                id = 1
+                for class_name in classes:
+                    try:
+                        occurrences = data.count(int(class_name))
+                    except ValueError as e:
+                        raise HTTPException(
+                            status_code=400, detail=f"Invalid class value: {class_name}"
+                        ) from e
+                    distribution = {
+                        "id": id,
+                        "Class": class_name,
+                        "Ocurrences": occurrences,
+                        "Percentage": round(occurrences / len(data) * 100, 2),
+                    }
+                    id += 1
+                    class_distribution.append(distribution)
+                summary["class_distribution"] = class_distribution
+
+            sample_data = [
+                {"id": idx, "value": value} for idx, value in enumerate(data[:50], 1)
+            ]
+            summary["sample_data"] = sample_data
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail="Prediction not found") from e
     except Exception as e:

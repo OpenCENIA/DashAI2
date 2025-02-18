@@ -1,3 +1,4 @@
+import torch
 from sklearn.exceptions import NotFittedError
 
 
@@ -37,6 +38,8 @@ class ModelFactory:
             factory = self
 
             def wrapped_fit(*args, **kwargs):
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
                 result = original_fit(*args, **kwargs)
                 factory.fitted = True
                 return result

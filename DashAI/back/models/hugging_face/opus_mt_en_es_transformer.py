@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from typing import List, Optional, Union
 
+import torch
 from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from transformers import (
@@ -36,7 +37,7 @@ class OpusMtEnESTransformerSchema(BaseSchema):
     )  # type: ignore
     batch_size: schema_field(
         int_field(ge=1),
-        placeholder=16,
+        placeholder=4,
         description="The batch size per GPU/TPU core/CPU for training",
     )  # type: ignore
     learning_rate: schema_field(

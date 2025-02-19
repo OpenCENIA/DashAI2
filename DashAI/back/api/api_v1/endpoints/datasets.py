@@ -300,7 +300,7 @@ async def upload_dataset(
             logger.debug("Storing dataset in %s", folder_path)
             new_dataset = dataloader.load_data(
                 filepath_or_buffer=str(file_path) if file_path is not None else url,
-                temp_path=str(folder_path),
+                temp_path=str(temp_dir),
                 params=parsed_params.model_dump(),
             )
             gc.collect()

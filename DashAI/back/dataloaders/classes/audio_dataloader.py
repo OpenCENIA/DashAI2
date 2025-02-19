@@ -41,30 +41,17 @@ class AudioDataLoader(BaseDataLoader):
         DatasetDict
             A HuggingFace's Dataset with the loaded data.
         """
-        if isinstance(filepath_or_buffer, str):
+        prepared_path = self.prepare_files(filepath_or_buffer, temp_path)
+        if prepared_path[1] == "dir":
             dataset = load_dataset(
                 "audiofolder",
-                data_files=filepath_or_buffer,
+                data_dir=prepared_path[0],
             ).cast_column(
                 "audio",
                 Audio(decode=False),
             )
-
-        elif isinstance(filepath_or_buffer, UploadFile):
-            if filepath_or_buffer.content_type == "application/zip":
-                files_path = self.extract_files(temp_path, filepath_or_buffer)
-
-                dataset = load_dataset(
-                    "audiofolder",
-                    data_dir=files_path,
-                ).cast_column(
-                    "audio",
-                    Audio(decode=False),
-                )
-            else:
-                raise Exception(
-                    "The audio dataloader requires the input file to be a zip file. "
-                    "The following content type was delivered: "
-                    f"{filepath_or_buffer.content_type}"
-                )
+        else:
+            raise Exception(
+                "The audio dataloader requires the input file to be a zip file. "
+            )
         return to_dashai_dataset(dataset)

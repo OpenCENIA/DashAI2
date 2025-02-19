@@ -7,6 +7,7 @@ import zipfile
 from abc import abstractmethod
 from typing import Any, Dict, Final, Union
 
+from datasets.download.download_manager import DownloadManager as dl_manager
 from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
@@ -103,7 +104,40 @@ class BaseDataLoader(ConfigObject):
         """
         raise NotImplementedError
 
-    def extract_files(self, dataset_path: str, file: UploadFile) -> str:
+    def prepare_files(self, file_path: str, temp_path: str) -> str:
+        """Prepare the files to load the data.
+
+        Args:
+            file_path (str): Path of the file to be prepared.
+            temp_path (str): Temporary path where the files will be extracted.
+
+        Returns
+        -------
+
+            path (str): Path of the files prepared.
+            type_path (str): Type of the path.
+
+        """
+        if file_path.startswith("http"):
+            file_path = dl_manager.download_and_extract(file_path, temp_path)
+            return (file_path, "dir")
+
+        if isinstance(file_path, UploadFile):
+            local_file_path = os.path.join(temp_path, file_path.filename)
+            with open(local_file_path, "wb") as f:
+                f.write(file_path.file.read())
+            file_path = local_file_path
+
+        if file_path.lower().endswith(".zip"):
+            extracted_path = self.extract_files(
+                file_path=file_path, temp_path=temp_path
+            )
+            return (extracted_path, "dir")
+
+        else:
+            return (file_path, "file")
+
+    def extract_files(self, file_path: str, temp_path: str) -> str:
         """Extract the files to load the data in a DataDict later.
 
         Args:
@@ -114,21 +148,8 @@ class BaseDataLoader(ConfigObject):
         -------
             str: Path of the files extracted.
         """
-        content_types_zip = [
-            "application/x-zip-compressed",
-            "application/zip",
-            "application/zip-compressed",
-            "multipart/x-zip",
-        ]  # Aded for compatibility with different zip file types
-        if file.content_type in content_types_zip:
-            files_path = f"{dataset_path}/files"
-            with zipfile.ZipFile(
-                file=io.BytesIO(file.file.read()),
-                mode="r",
-            ) as zip_file:
-                zip_file.extractall(path=files_path)
-        else:
-            files_path = f"{dataset_path}/{file.filename}"
-            with open(files_path, "wb") as f:
-                f.write(file.file.read())
+        files_path = os.path.join(temp_path, "files")
+        os.makedirs(files_path, exist_ok=True)
+        with zipfile.ZipFile(file_path, "r") as zip_ref:
+            zip_ref.extractall(files_path)
         return files_path

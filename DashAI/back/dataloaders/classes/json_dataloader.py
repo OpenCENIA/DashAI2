@@ -104,33 +104,14 @@ class JSONDataLoader(BaseDataLoader):
         """
         self._check_params(params)
         field = params["data_key"]
+        prepared_path = self.prepare_files(filepath_or_buffer, temp_path)
 
-        if isinstance(filepath_or_buffer, str):
+        if prepared_path[1] == "file":
             dataset = load_dataset(
                 "json",
-                data_files=filepath_or_buffer,
+                data_files=prepared_path[0],
                 field=field,
             )
-
-        elif isinstance(filepath_or_buffer, UploadFile):
-            files_path = self.extract_files(temp_path, filepath_or_buffer)
-            if files_path.split("/")[-1] == "files":
-                try:
-                    dataset = load_dataset(
-                        "json",
-                        data_dir=files_path,
-                        field=field,
-                    )
-                finally:
-                    shutil.rmtree(temp_path, ignore_errors=True)
-            else:
-                try:
-                    dataset = load_dataset(
-                        "json",
-                        data_files=files_path,
-                        field=field,
-                    )
-                finally:
-                    os.remove(files_path)
-
+        else:
+            dataset = load_dataset("json", data_dir=prepared_path[0], field=field)
         return to_dashai_dataset(dataset)

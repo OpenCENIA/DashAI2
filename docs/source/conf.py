@@ -24,10 +24,13 @@ extensions = [
     "sphinx.ext.duration",
     "sphinx.ext.autosummary",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
     "sphinx_rtd_theme",
 ]
-
+autosummary_generate = True
+add_module_names = False
 templates_path = ["_templates"]
 exclude_patterns = []
 

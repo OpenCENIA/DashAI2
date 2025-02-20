@@ -14,7 +14,6 @@ def create_dataset(client):
         form_data = {
             "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "DummyDataset2",
-                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,

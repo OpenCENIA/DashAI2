@@ -21,11 +21,6 @@ class DatasetParams(BaseModel):
 
     dataloader: str
     name: str
-    dataset_is_already_split: bool = False
-
-
-#   splits: SplitParams
-#   more_options: MoreOptionsParams
 
 
 class ColumnSpecItemParams(BaseModel):

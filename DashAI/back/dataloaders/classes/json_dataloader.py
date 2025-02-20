@@ -43,15 +43,6 @@ class JSONDataloaderSchema(BaseSchema):
             "records" orient in pandas), set this value as null.
         """,
     )  # type: ignore
-    dataset_is_already_split: schema_field(
-        bool_field(),
-        False,
-        (
-            "If your dataset is already split into training, validation, and test sets,"
-            "upload it as a ZIP file with each split in separate folders. Otherwise, "
-            "upload a single dataset file."
-        ),
-    )  # type: ignore
 
 
 class JSONDataLoader(BaseDataLoader):

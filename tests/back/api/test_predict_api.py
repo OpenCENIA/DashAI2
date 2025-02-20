@@ -80,7 +80,6 @@ def create_dataset(client: TestClient):
         form_data = {
             "params": """{  "dataloader": "JSONDataLoader",
                                     "name": "test_json",
-                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
@@ -123,7 +122,6 @@ def create_dataset_2(client: TestClient):
         form_data = {
             "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "test_csv",
-                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,

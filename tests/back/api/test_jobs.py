@@ -96,7 +96,6 @@ def fixture_dataset_id(client: TestClient):
         form_data = {
             "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "test_csv3",
-                                    "dataset_is_already_split": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,

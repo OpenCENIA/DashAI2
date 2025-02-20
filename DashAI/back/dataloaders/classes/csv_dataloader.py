@@ -7,7 +7,6 @@ from typing import Any, Dict, Union
 
 from beartype import beartype
 from datasets import DatasetDict, load_dataset
-from starlette.datastructures import UploadFile
 
 from DashAI.back.core.schema_fields import (
     bool_field,
@@ -65,7 +64,7 @@ class CSVDataLoader(BaseDataLoader):
     @beartype
     def load_data(
         self,
-        filepath_or_buffer: Union[UploadFile, str],
+        filepath_or_buffer: str,
         temp_path: str,
         params: Dict[str, Any],
     ) -> DashAIDataset:
@@ -73,7 +72,7 @@ class CSVDataLoader(BaseDataLoader):
 
         Parameters
         ----------
-        filepath_or_buffer : Union[UploadFile, str], optional
+        filepath_or_buffer : str, optional
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -102,5 +101,6 @@ class CSVDataLoader(BaseDataLoader):
                 data_dir=prepared_path[0],
                 delimiter=separator,
             )
+            shutil.rmtree(prepared_path[0])
 
         return to_dashai_dataset(dataset)

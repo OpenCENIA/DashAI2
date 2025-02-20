@@ -136,7 +136,8 @@ class DistilBertTransformer(TextClassificationModel):
 
         """
         output_column_name = y_train.column_names[0]
-        self.num_labels = len(set(y_train[output_column_name]))
+        if self.num_labels is None:
+            self.num_labels = len(set(y_train[output_column_name]))
         self.model.config.num_labels = self.num_labels
         train_dataset = self.tokenize_data(x_train)
         train_dataset = train_dataset.add_column("label", y_train[output_column_name])
@@ -213,6 +214,7 @@ class DistilBertTransformer(TextClassificationModel):
     def save(self, filename: Union[str, Path]) -> None:
         self.model.save_pretrained(filename)
         config = AutoConfig.from_pretrained(filename)
+        print("IN SAVE NUM", self.num_labels)
         config.custom_params = {
             "num_train_epochs": self.training_args.get("num_train_epochs"),
             "batch_size": self.batch_size,
@@ -229,6 +231,8 @@ class DistilBertTransformer(TextClassificationModel):
     def load(cls, filename: Union[str, Path]) -> Any:
         config = AutoConfig.from_pretrained(filename)
         custom_params = getattr(config, "custom_params", {})
+
+        print("IN LOAD", custom_params.get("num_labels"))
 
         model = AutoModelForSequenceClassification.from_pretrained(
             filename, num_labels=custom_params.get("num_labels")

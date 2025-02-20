@@ -8,7 +8,6 @@ from abc import abstractmethod
 from typing import Any, Dict, Final, Union
 
 from datasets.download.download_manager import DownloadManager as dl_manager
-from starlette.datastructures import UploadFile
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -24,7 +23,7 @@ class BaseDataLoader(ConfigObject):
     @abstractmethod
     def load_data(
         self,
-        filepath_or_buffer: Union[UploadFile, str],
+        filepath_or_buffer: str,
         temp_path: str,
         params: Dict[str, Any],
     ) -> DashAIDataset:
@@ -32,7 +31,7 @@ class BaseDataLoader(ConfigObject):
 
         Parameters
         ----------
-        filepath_or_buffer : Union[UploadFile, str], optional
+        filepath_or_buffer : str
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -65,12 +64,6 @@ class BaseDataLoader(ConfigObject):
             file_path = dl_manager.download_and_extract(file_path, temp_path)
             return (file_path, "dir")
 
-        if isinstance(file_path, UploadFile):
-            local_file_path = os.path.join(temp_path, file_path.filename)
-            with open(local_file_path, "wb") as f:
-                f.write(file_path.file.read())
-            file_path = local_file_path
-
         if file_path.lower().endswith(".zip"):
             extracted_path = self.extract_files(
                 file_path=file_path, temp_path=temp_path
@@ -84,9 +77,8 @@ class BaseDataLoader(ConfigObject):
         """Extract the files to load the data in a DataDict later.
 
         Args:
-            dataset_path (str): Path where dataset will be saved.
-            file (UploadFile): File uploaded for the user.
-
+            temp_path (str): Path where dataset will be saved.
+            file_path (str): Path of the file to be extracted.
         Returns
         -------
             str: Path of the files extracted.

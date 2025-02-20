@@ -2,7 +2,6 @@ import io
 
 import pytest
 from datasets import DatasetDict, concatenate_datasets
-from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
@@ -39,12 +38,8 @@ def tabular_model_fixture():
     dataset_path = "tests/back/explainers/iris.csv"
     dataloader = CSVDataLoader()
 
-    with open(dataset_path, "r") as file:
-        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(csv_binary)
-
     datasetdict = dataloader.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=dataset_path,
         temp_path="tests/back/explainers",
         params={"separator": ","},
     )

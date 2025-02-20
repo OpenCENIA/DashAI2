@@ -2,7 +2,6 @@ import io
 
 import pytest
 from datasets import DatasetDict
-from starlette.datastructures import UploadFile
 
 from DashAI.back.converters.column_dropper_by_index import ColumnDropperByIndex
 from DashAI.back.converters.column_dropper_by_name import ColumnDropperByName
@@ -18,13 +17,8 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
 def prepare_iris_dataset():
     test_dataset_path = "tests/back/converters/iris.csv"
     dataloader_test = CSVDataLoader()
-
-    with open(test_dataset_path, "r") as file:
-        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(csv_binary)
-
     datasetdict = dataloader_test.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/converters",
         params={"separator": ","},
     )
@@ -36,13 +30,8 @@ def prepare_iris_dataset():
 def prepare_iris_petal_width_dropped_dataset():
     test_dataset_path = "tests/back/converters/iris_petal_width_dropped.csv"
     dataloader_test = CSVDataLoader()
-
-    with open(test_dataset_path, "r") as file:
-        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(csv_binary)
-
     datasetdict = dataloader_test.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/converters",
         params={"separator": ","},
     )
@@ -54,13 +43,8 @@ def prepare_iris_petal_width_dropped_dataset():
 def prepare_iris_dataset_petal_cols_dropped():
     test_dataset_path = "tests/back/converters/iris_petal_cols_dropped.csv"
     dataloader_test = CSVDataLoader()
-
-    with open(test_dataset_path, "r") as file:
-        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(csv_binary)
-
     datasetdict = dataloader_test.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/converters",
         params={"separator": ","},
     )

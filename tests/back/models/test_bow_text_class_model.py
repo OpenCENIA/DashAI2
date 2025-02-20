@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 import pytest
 from datasets import DatasetDict
-from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -27,12 +26,8 @@ def splited_dataset_fixture():
     test_dataset_path = "tests/back/models/dummy_text.json"
     dataloader_test = JSONDataLoader()
 
-    with open(test_dataset_path, "r") as file:
-        json_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(json_binary)
-
     datasetdict = dataloader_test.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/models",
         params={"data_key": "data"},
     )

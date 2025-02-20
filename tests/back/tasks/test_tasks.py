@@ -3,7 +3,6 @@ import shutil
 
 import pytest
 from datasets import DatasetDict
-from starlette.datastructures import Headers, UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
@@ -23,12 +22,8 @@ def load_csv_into_datasetdict(file_name):
     test_dataset_path = f"tests/back/tasks/{file_name}"
     csv_dataloader = CSVDataLoader()
 
-    with open(test_dataset_path, "r") as file:
-        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(csv_binary)
-
     datasetdict = csv_dataloader.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/tasks",
         params={"separator": ","},
     )
@@ -139,13 +134,8 @@ def text_classification_dataset_fixture():
     test_dataset_path = "tests/back/tasks/ImdbSentimentDatasetSmall.json"
     json_dataloader = JSONDataLoader()
 
-    with open(test_dataset_path, "r", encoding="utf8") as file:
-        json_data = file.read()
-        json_binary = io.BytesIO(bytes(json_data, encoding="utf8"))
-        file = UploadFile(json_binary)
-
     dataset = json_dataloader.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/tasks",
         params={"data_key": "data"},
     )
@@ -200,17 +190,11 @@ def image_classification_dataset_fixture():
     test_dataset_path = "tests/back/tasks/beans_dataset_small.zip"
     image_dataloader = ImageDataLoader()
 
-    with open(test_dataset_path, "rb") as file:
-        upload_file = UploadFile(
-            file=file,
-            filename=test_dataset_path,
-            headers=Headers({"Content-Type": "application/zip"}),
-        )
-        dataset_dict = image_dataloader.load_data(
-            filepath_or_buffer=upload_file,
-            params={},
-            temp_path="tests/back/tasks/beans_dataset",
-        )
+    dataset_dict = image_dataloader.load_data(
+        filepath_or_buffer=test_dataset_path,
+        params={},
+        temp_path="tests/back/tasks/beans_dataset",
+    )
 
     dataset = to_dashai_dataset(dataset_dict)
 
@@ -264,12 +248,8 @@ def translation_dataset_fixture():
     test_dataset_path = "tests/back/tasks/translationEngSpaDatasetSmall.json"
     json_dataloader = JSONDataLoader()
 
-    with open(test_dataset_path, "r", encoding="utf8") as file:
-        json_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(json_binary)
-
     dataset = json_dataloader.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/tasks",
         params={"data_key": "data"},
     )

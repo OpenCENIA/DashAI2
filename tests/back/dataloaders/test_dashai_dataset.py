@@ -11,7 +11,6 @@ import pytest
 from datasets import DatasetDict
 from pyarrow.lib import ArrowInvalid
 from sklearn.datasets import load_iris
-from starlette.datastructures import UploadFile
 
 from DashAI.back.api.api_v1.schemas.datasets_params import ColumnSpecItemParams
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
@@ -31,12 +30,9 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
 from tests.back.test_datasets_generator import CSVTestDatasetGenerator
 
 
-def _read_file_wrapper(dataset_path: pathlib.Path) -> UploadFile:
-    """Read some file and simulate an upload by using UploadFile."""
-    with open(dataset_path, "r") as file:
-        loaded_bytes = file.read()
-        bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-        file = UploadFile(bytes_buffer)
+def _read_file_wrapper(dataset_path: pathlib.Path) -> str:
+    """Now is not needed to read the file, but to get the path as a string."""
+    file = str(dataset_path)
     return file
 
 
@@ -69,7 +65,7 @@ def load_test_datasetdict(test_datasets_path: pathlib.Path) -> DatasetDict:
 
     test_datasetdict = CSVDataLoader().load_data(
         filepath_or_buffer=file,
-        temp_path="tests/back/dataloaders",
+        temp_path=str(test_datasets_path),
         params={"separator": ";"},
     )
 

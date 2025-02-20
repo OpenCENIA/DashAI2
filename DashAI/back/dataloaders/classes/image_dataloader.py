@@ -1,10 +1,11 @@
 """DashAI Image Dataloader."""
 
+import os
+import shutil
 from typing import Any, Dict, Union
 
 from beartype import beartype
 from datasets import DatasetDict, load_dataset
-from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
@@ -21,7 +22,7 @@ class ImageDataLoader(BaseDataLoader):
     @beartype
     def load_data(
         self,
-        filepath_or_buffer: Union[UploadFile, str],
+        filepath_or_buffer: str,
         temp_path: str,
         params: Dict[str, Any],
     ) -> DashAIDataset:
@@ -29,7 +30,7 @@ class ImageDataLoader(BaseDataLoader):
 
         Parameters
         ----------
-        filepath_or_buffer : Union[UploadFile, str], optional
+        filepath_or_buffer : str
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -50,10 +51,9 @@ class ImageDataLoader(BaseDataLoader):
                 "imagefolder",
                 data_dir=prepared_path[0],
             )
+            shutil.rmtree(prepared_path[0])
         else:
             raise Exception(
-                "The image dataloader requires the input file to be a zip file. "
-                f"The following content type was delivered: "
-                f"{filepath_or_buffer.content_type}"
-            )
+                "The image dataloader requires the input file to be a zip file."
+            ) from None
         return to_dashai_dataset(dataset)

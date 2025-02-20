@@ -1,11 +1,10 @@
 """DashAI Image Dataloader."""
 
-import os
 import shutil
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 from beartype import beartype
-from datasets import DatasetDict, load_dataset
+from datasets import load_dataset
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,

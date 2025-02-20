@@ -1,4 +1,3 @@
-import io
 import os
 import shutil
 
@@ -59,13 +58,13 @@ def splited_dataset_fixture():
     return (x, y)
 
 
-@pytest.fixture
+@pytest.fixture()
 def sample_model():
     model = DistilBertTransformer(
         num_train_epochs=2,
         batch_size=16,
         learning_rate=5e-5,
-        device="gpu",
+        device="cpu",
         weight_decay=0.01,
         num_labels=2,
     )
@@ -138,9 +137,10 @@ def test_save_and_load(sample_model, splited_dataset, tmp_path):
 
     assert original_state_dict.keys() == loaded_state_dict.keys()
 
-    for key in original_state_dict.keys():
+    for key in original_state_dict:
         assert torch.equal(
             original_state_dict[key], loaded_state_dict[key]
-        ), f"The loaded model should have the same weights and parameters as the original model (mismatch in {key})"
+        ), f"""The loaded model should have the same weights and parameters
+        as the original model (mismatch in {key})"""
 
     shutil.rmtree(save_path)

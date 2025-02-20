@@ -1,4 +1,3 @@
-import io
 import os
 from pathlib import Path
 
@@ -7,7 +6,6 @@ import pytest
 from datasets import DatasetDict
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
-    DashAIDataset,
     select_columns,
     split_dataset,
     split_indexes,

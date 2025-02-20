@@ -1,4 +1,3 @@
-import io
 import os
 
 import pytest
@@ -52,7 +51,7 @@ def translation_dataset_fixture():
     return (x["train"], y["train"])
 
 
-@pytest.fixture
+@pytest.fixture()
 def sample_model() -> OpusMtEnESTransformer:
     model = OpusMtEnESTransformer(
         num_train_epochs=1,
@@ -65,7 +64,7 @@ def sample_model() -> OpusMtEnESTransformer:
 
 
 @pytest.fixture(autouse=True)
-def clear_cuda_cache():
+def _clear_cuda_cache():
     yield
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
@@ -124,4 +123,5 @@ def test_save_and_load(sample_model, translation_dataset, tmp_path):
     ):
         assert torch.equal(
             param_original, param_loaded
-        ), "The loaded model should have the same weights and parameters as the original model"
+        ), """The loaded model should have the same weights
+            and parameters as the original model"""

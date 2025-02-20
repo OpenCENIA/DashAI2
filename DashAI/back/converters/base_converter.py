@@ -3,7 +3,6 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from typing import Final
 
-from datasets import DatasetDict
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from DashAI.back.config_object import ConfigObject

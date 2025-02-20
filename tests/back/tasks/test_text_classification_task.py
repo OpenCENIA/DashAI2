@@ -1,19 +1,10 @@
 import json
 import os
-from pathlib import Path
 
-import joblib
 import pytest
 from fastapi.testclient import TestClient
 
-from DashAI.back.dataloaders.classes.json_dataloader import JSONDataLoader
 from DashAI.back.dependencies.database.models import Dataset, Experiment, Run
-from DashAI.back.dependencies.registry import ComponentRegistry
-from DashAI.back.job.model_job import ModelJob
-from DashAI.back.metrics import BaseMetric
-from DashAI.back.models import BaseModel
-from DashAI.back.optimizers import OptunaOptimizer
-from DashAI.back.tasks import BaseTask
 
 
 @pytest.fixture(scope="module", name="dataset", autouse=True)

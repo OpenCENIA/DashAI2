@@ -1,6 +1,5 @@
 """Tabular Dataloaders tests."""
 
-import io
 import pathlib
 from abc import abstractmethod
 from typing import Any, Dict, Type
@@ -8,7 +7,6 @@ from typing import Any, Dict, Type
 import pytest
 from datasets import DatasetDict
 from datasets.builder import DatasetGenerationError
-from fastapi.datastructures import Headers
 
 from DashAI.back.dataloaders import BaseDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, split_dataset

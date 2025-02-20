@@ -4,6 +4,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Union
 
+import torch
 from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from torch.utils.data import DataLoader
@@ -85,6 +86,7 @@ class DistilBertTransformer(TextClassificationModel):
         The process includes the instantiation of the pre-trained model and the
         associated tokenizer.
         """
+        self.num_labels = kwargs.get("num_labels")
         kwargs = self.validate_and_transform(kwargs)
         self.model_name = "distilbert-base-uncased"
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
@@ -95,7 +97,6 @@ class DistilBertTransformer(TextClassificationModel):
         }
         self.batch_size = kwargs.get("batch_size", 16)
         self.device = kwargs.get("device", "gpu")
-        self.num_labels = kwargs.get("num_labels")
         self.model = (
             model
             if model is not None
@@ -142,6 +143,7 @@ class DistilBertTransformer(TextClassificationModel):
         train_dataset = self.tokenize_data(x_train)
         train_dataset = train_dataset.add_column("label", y_train[output_column_name])
 
+        can_use_fp16 = torch.cuda.is_available() and self.device == "gpu"
         training_args = TrainingArguments(
             output_dir="DashAI/back/user_models/temp_checkpoints_distilbert",
             logging_strategy="steps",
@@ -149,7 +151,7 @@ class DistilBertTransformer(TextClassificationModel):
             save_strategy="epoch",  # Guarda checkpoints al final de cada época
             per_device_train_batch_size=self.batch_size,
             no_cuda=self.device != "gpu",
-            fp16=self.devide == "gpu",
+            fp16=can_use_fp16,
             **self.training_args,
         )
 
@@ -214,7 +216,6 @@ class DistilBertTransformer(TextClassificationModel):
     def save(self, filename: Union[str, Path]) -> None:
         self.model.save_pretrained(filename)
         config = AutoConfig.from_pretrained(filename)
-        print("IN SAVE NUM", self.num_labels)
         config.custom_params = {
             "num_train_epochs": self.training_args.get("num_train_epochs"),
             "batch_size": self.batch_size,
@@ -231,8 +232,6 @@ class DistilBertTransformer(TextClassificationModel):
     def load(cls, filename: Union[str, Path]) -> Any:
         config = AutoConfig.from_pretrained(filename)
         custom_params = getattr(config, "custom_params", {})
-
-        print("IN LOAD", custom_params.get("num_labels"))
 
         model = AutoModelForSequenceClassification.from_pretrained(
             filename, num_labels=custom_params.get("num_labels")

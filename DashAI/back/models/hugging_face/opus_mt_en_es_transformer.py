@@ -4,7 +4,6 @@ import shutil
 from pathlib import Path
 from typing import List, Optional, Union
 
-import torch
 from datasets import Dataset
 from sklearn.exceptions import NotFittedError
 from transformers import (

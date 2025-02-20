@@ -315,7 +315,8 @@ class BaseOptimizer(ConfigObject, metaclass=ABCMeta):
                 param: 1.0 / len(self.parameters) for param in self.parameters
             }
             log.warning(
-                "Could not calculate parameter importance using FANOVA. Using equal importances."
+                "Could not calculate parameter importance using FANOVA. "
+                "Using equal importances."
             )
 
         sorted_items = sorted(importances.items(), key=lambda item: item[1])

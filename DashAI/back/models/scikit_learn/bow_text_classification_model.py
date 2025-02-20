@@ -12,10 +12,7 @@ from DashAI.back.core.schema_fields import (
     int_field,
     schema_field,
 )
-from DashAI.back.dataloaders.classes.dashai_dataset import (
-    DashAIDataset,
-    to_dashai_dataset,
-)
+from DashAI.back.dataloaders.classes.dashai_dataset import to_dashai_dataset
 from DashAI.back.models.scikit_learn.sklearn_like_model import SklearnLikeModel
 from DashAI.back.models.text_classification_model import TextClassificationModel
 
@@ -100,7 +97,8 @@ class BagOfWordsTextClassificationModel(TextClassificationModel, SklearnLikeMode
 
     def _transform_parameters(self, kwargs: dict) -> dict:
         """
-        Transform the raw parameters from the frontend into a format compatible with the model.
+        Transform the raw parameters from the frontend into a format compatible
+        with the model.
 
         Parameters
         ----------

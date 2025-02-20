@@ -1,7 +1,6 @@
 """DashAI Dataset test suit module."""
 
 # ruff: noqa: ERA001
-import io
 import pathlib
 import shutil
 from typing import List

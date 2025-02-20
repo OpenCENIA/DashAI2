@@ -4,7 +4,6 @@ from datasets import ClassLabel, DatasetDict, Value
 
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
-    split_dataset,
     to_dashai_dataset,
 )
 from DashAI.back.tasks.base_task import BaseTask

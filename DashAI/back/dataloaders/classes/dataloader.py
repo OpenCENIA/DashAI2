@@ -1,13 +1,12 @@
 """DashAI base class for dataloaders."""
 
-import io
 import logging
 import os
 import zipfile
 from abc import abstractmethod
-from typing import Any, Dict, Final, Union
+from typing import Any, Dict, Final
 
-from datasets.download.download_manager import DownloadManager as dl_manager
+from datasets.download.download_manager import DownloadManager
 
 from DashAI.back.config_object import ConfigObject
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
@@ -61,7 +60,7 @@ class BaseDataLoader(ConfigObject):
 
         """
         if file_path.startswith("http"):
-            file_path = dl_manager.download_and_extract(file_path, temp_path)
+            file_path = DownloadManager.download_and_extract(file_path, temp_path)
             return (file_path, "dir")
 
         if file_path.lower().endswith(".zip"):

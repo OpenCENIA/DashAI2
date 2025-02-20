@@ -1,5 +1,3 @@
-import io
-
 import pytest
 from datasets import DatasetDict, concatenate_datasets
 

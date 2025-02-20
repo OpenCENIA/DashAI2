@@ -1,7 +1,6 @@
 from typing import Tuple, Type, Union
 
 from beartype import beartype
-from datasets import DatasetDict
 
 from DashAI.back.converters.base_converter import BaseConverter
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset

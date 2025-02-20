@@ -1,9 +1,8 @@
 """DashAI Excel Dataloader."""
 
 import glob
-import os
 import shutil
-from typing import Any, Dict, Union
+from typing import Any, Dict
 
 import pandas as pd
 from beartype import beartype

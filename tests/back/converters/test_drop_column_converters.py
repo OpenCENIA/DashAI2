@@ -1,15 +1,10 @@
-import io
-
 import pytest
-from datasets import DatasetDict
 
 from DashAI.back.converters.column_dropper_by_index import ColumnDropperByIndex
 from DashAI.back.converters.column_dropper_by_name import ColumnDropperByName
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
-    split_dataset,
-    to_dashai_dataset,
 )
 
 

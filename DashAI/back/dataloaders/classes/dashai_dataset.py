@@ -96,7 +96,8 @@ class DashAIDataset(Dataset):
     @beartype
     def save_to_disk(self, dataset_path: Union[str, os.PathLike]) -> None:
         """
-        Overrides the default save_to_disk method to save the dataset as a single directory with:
+        Overrides the default save_to_disk method to save the dataset as
+        a single directory with:
           - "data.arrow": the dataset's Arrow table.
           - "splits.json": the dataset's splits (e.g., original split indices).
 
@@ -224,13 +225,16 @@ class DashAIDataset(Dataset):
         it creates a new dataset containing only those rows.
 
         Parameters:
-            split_name (str): The name of the split to extract (e.g., "train", "test", "validation").
+            split_name (str): The name of the split to extract (e.g., "train",
+            "test", "validation").
 
         Returns:
-            DashAIDataset: A new DashAIDataset instance containing only the rows of the specified split.
+            DashAIDataset: A new DashAIDataset instance containing only the
+            rows of the specified split.
 
         Raises:
-            ValueError: If the specified split is not found in the splits of the dataset.
+            ValueError: If the specified split is not found in the splits
+            of the dataset.
         """
         splits = self.splits.get("split_indices", {})
         if split_name not in splits:
@@ -252,7 +256,8 @@ def merge_splits_with_metadata(dataset_dict: DatasetDict) -> DashAIDataset:
     the original indices for each split in the metadata.
 
     Parameters:
-        dataset_dict (DatasetDict): A Hugging Face DatasetDict containing multiple splits.
+        dataset_dict (DatasetDict): A Hugging Face DatasetDict containing
+        multiple splits.
 
     Returns:
         DashAIDataset: A unified dataset with merged data and metadata containing the
@@ -287,7 +292,8 @@ def save_dataset(dataset: DashAIDataset, path: Union[str, os.PathLike]) -> None:
 
     Parameters:
         dataset (DashAIDataset): The dataset to save.
-        path (Union[str, os.PathLike]): The directory path where the files will be saved.
+        path (Union[str, os.PathLike]): The directory path where the files
+        will be saved.
     """
 
     os.makedirs(path, exist_ok=True)
@@ -452,7 +458,8 @@ def split_dataset(
 ) -> DatasetDict:
     """
     Split the dataset in train, test and validation subsets.
-    If indexes are not provided, it will use the split indices from the dataset's splits.
+    If indexes are not provided, it will use the split indices
+    from the dataset's splits.
 
     Parameters
     ----------
@@ -523,7 +530,7 @@ def split_dataset(
 
 
 def to_dashai_dataset(
-    dataset: Union[DatasetDict, Dataset, DashAIDataset]
+    dataset: Union[DatasetDict, Dataset, DashAIDataset],
 ) -> DashAIDataset:
     """
     Converts a DatasetDict into a unified DashAIDataset.
@@ -536,7 +543,8 @@ def to_dashai_dataset(
         dataset_dict (DatasetDict): The original dataset with one or more splits.
 
     Returns:
-        DashAIDataset: A unified dataset containing all data and metadata about the original splits.
+        DashAIDataset: A unified dataset containing all data and metadata
+        about the original splits.
     """
     if isinstance(dataset, DashAIDataset):
         return dataset
@@ -827,7 +835,7 @@ def prepare_for_experiment(
             splits["test"],
             splits["validation"],
             shuffle=splits.get("shuffle", False),
-            seed=splits.get("seed", None),
+            seed=splits.get("seed"),
             stratify=splits.get("stratify", False),
             labels=labels,
         )

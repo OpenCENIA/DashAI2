@@ -32,19 +32,18 @@ class ModelFactory:
         if hasattr(self.model, "optimizable_params"):
             self.optimizable_parameters = self.model.optimizable_params
 
-        # update the model's fit method to set the fitted attribute to True
         if hasattr(self.model, "fit"):
-            original_fit = self.model.fit
-            factory = self
+            self.original_fit = self.model.fit
+            self.model.fit = self.wrapped_fit
 
-            def wrapped_fit(*args, **kwargs):
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
-                result = original_fit(*args, **kwargs)
-                factory.fitted = True
-                return result
-
-            self.model.fit = wrapped_fit
+    def wrapped_fit(self, *args, **kwargs):
+        """Wrapped version of the model's fit method that handles CUDA
+        memory and fitted state."""
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        result = self.original_fit(*args, **kwargs)
+        self.fitted = True
+        return result
 
     def _extract_parameters(self, parameters: dict) -> dict:
         """

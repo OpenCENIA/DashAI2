@@ -2,8 +2,6 @@
 
 import shutil
 
-from datasets import DatasetDict
-
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset
 from DashAI.back.dataloaders.classes.image_dataloader import ImageDataLoader
 

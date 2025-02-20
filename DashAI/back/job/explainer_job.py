@@ -14,7 +14,6 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     select_columns,
     split_dataset,
     split_indexes,
-    update_dataset_splits,
 )
 from DashAI.back.dependencies.database.models import (
     Dataset,
@@ -272,7 +271,7 @@ class ExplainerJob(BaseJob):
                 ) from e
             try:
                 splits = json.loads(experiment.splits)
-                if type(splits.get("train")) == list:
+                if isinstance(splits.get("train"), list):
                     splits_index = splits
                     loaded_dataset = split_dataset(
                         loaded_dataset,

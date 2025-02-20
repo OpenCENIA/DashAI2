@@ -149,7 +149,7 @@ class DistilBertTransformer(TextClassificationModel):
             save_strategy="epoch",  # Guarda checkpoints al final de cada época
             per_device_train_batch_size=self.batch_size,
             no_cuda=self.device != "gpu",
-            fp16=True,
+            fp16=self.devide == "gpu",
             **self.training_args,
         )
 

@@ -14,6 +14,7 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     DashAIDataset,
     get_column_names_from_indexes,
     load_dataset,
+    prepare_for_experiment,
     select_columns,
     split_dataset,
     split_indexes,
@@ -124,38 +125,11 @@ class ModelJob(BaseJob):
                     loaded_dataset, experiment.output_columns
                 )
                 splits = json.loads(experiment.splits)
-                splitType = splits.get("splitType")
-                if splitType == "manual" or splitType == "predefined":
-                    splits_index = splits
-                    prepared_dataset = split_dataset(
-                        prepared_dataset,
-                        train_indexes=splits_index["train"],
-                        test_indexes=splits_index["test"],
-                        val_indexes=splits_index["validation"],
-                    )
-                else:
-                    n = len(prepared_dataset)
-                    if splits.get("stratify", False):
-                        output_column = experiment.output_columns[0]
-                        labels = prepared_dataset[output_column]
-                    else:
-                        labels = None
-                    train_indexes, test_indexes, val_indexes = split_indexes(
-                        n,
-                        splits["train"],
-                        splits["test"],
-                        splits["validation"],
-                        shuffle=splits.get("shuffle", False),
-                        seed=splits.get("seed", None),
-                        stratify=splits.get("stratify", False),
-                        labels=labels,
-                    )
-                    prepared_dataset = split_dataset(
-                        prepared_dataset,
-                        train_indexes=train_indexes,
-                        test_indexes=test_indexes,
-                        val_indexes=val_indexes,
-                    )
+                prepared_dataset = prepare_for_experiment(
+                    dataset=prepared_dataset,
+                    splits=splits,
+                    output_columns=experiment.output_columns,
+                )
 
                 x, y = select_columns(
                     prepared_dataset,

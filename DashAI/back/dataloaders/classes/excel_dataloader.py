@@ -9,7 +9,6 @@ import pandas as pd
 from beartype import beartype
 from datasets import Dataset, DatasetDict
 from datasets.builder import DatasetGenerationError
-from starlette.datastructures import UploadFile
 
 from DashAI.back.core.schema_fields import (
     int_field,
@@ -75,7 +74,7 @@ class ExcelDataLoader(BaseDataLoader):
     @beartype
     def load_data(
         self,
-        filepath_or_buffer: Union[UploadFile, str],
+        filepath_or_buffer: str,
         temp_path: str,
         params: Dict[str, Any],
     ) -> DashAIDataset:
@@ -83,7 +82,7 @@ class ExcelDataLoader(BaseDataLoader):
 
         Parameters
         ----------
-        filepath_or_buffer : Union[UploadFile, str], optional
+        filepath_or_buffer : str
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -98,12 +97,15 @@ class ExcelDataLoader(BaseDataLoader):
         """
         prepared_path = self.prepare_files(filepath_or_buffer, temp_path)
         if prepared_path[1] == "file":
-            dataset = pd.read_excel(
-                io=prepared_path[0],
-                sheet_name=params["sheet"],
-                header=params["header"],
-                usecols=params["usecols"],
-            )
+            try:
+                dataset = pd.read_excel(
+                    io=prepared_path[0],
+                    sheet_name=params["sheet"],
+                    header=params["header"],
+                    usecols=params["usecols"],
+                )
+            except ValueError as e:
+                raise DatasetGenerationError from e
             dataset_dict = DatasetDict({"train": Dataset.from_pandas(dataset)})
         if prepared_path[1] == "dir":
             train_files = glob.glob(prepared_path[0] + "/train/*")
@@ -114,34 +116,34 @@ class ExcelDataLoader(BaseDataLoader):
             try:
                 train_df_list = [
                     pd.read_excel(
-                        io=prepared_path[0],
+                        io=file_path,
                         sheet_name=params["sheet"],
                         header=params["header"],
                         usecols=params["usecols"],
                     )
-                    for prepared_path[0] in sorted(train_files)
+                    for file_path in sorted(train_files)
                 ]
 
                 train_df = pd.concat(train_df_list)
                 test_df_list = [
                     pd.read_excel(
-                        io=prepared_path[0],
+                        io=file_path,
                         sheet_name=params["sheet"],
                         header=params["header"],
                         usecols=params["usecols"],
                     )
-                    for prepared_path[0] in sorted(test_files)
+                    for file_path in sorted(test_files)
                 ]
                 test_df_list = pd.concat(test_df_list)
 
                 val_df_list = [
                     pd.read_excel(
-                        io=prepared_path[0],
+                        io=file_path,
                         sheet_name=params["sheet"],
                         header=params["header"],
                         usecols=params["usecols"],
                     )
-                    for prepared_path[0] in sorted(val_files)
+                    for file_path in sorted(val_files)
                 ]
                 val_df = pd.concat(val_df_list)
 
@@ -154,4 +156,6 @@ class ExcelDataLoader(BaseDataLoader):
                 )
             except ValueError as e:
                 raise DatasetGenerationError from e
+            finally:
+                shutil.rmtree(prepared_path[0])
         return to_dashai_dataset(dataset_dict)

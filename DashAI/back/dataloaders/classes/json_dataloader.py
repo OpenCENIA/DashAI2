@@ -6,7 +6,6 @@ from typing import Any, Dict, Union
 
 from beartype import beartype
 from datasets import DatasetDict, load_dataset
-from starlette.datastructures import UploadFile
 
 from DashAI.back.core.schema_fields import (
     bool_field,
@@ -71,7 +70,7 @@ class JSONDataLoader(BaseDataLoader):
     @beartype
     def load_data(
         self,
-        filepath_or_buffer: Union[UploadFile, str],
+        filepath_or_buffer: str,
         temp_path: str,
         params: Dict[str, Any],
     ) -> DashAIDataset:
@@ -79,7 +78,7 @@ class JSONDataLoader(BaseDataLoader):
 
         Parameters
         ----------
-        filepath_or_buffer : Union[UploadFile, str], optional
+        filepath_or_buffer : str
             An URL where the dataset is located or a FastAPI/Uvicorn uploaded file
             object.
         temp_path : str
@@ -105,4 +104,5 @@ class JSONDataLoader(BaseDataLoader):
             )
         else:
             dataset = load_dataset("json", data_dir=prepared_path[0], field=field)
+            shutil.rmtree(prepared_path[0])
         return to_dashai_dataset(dataset)

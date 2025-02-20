@@ -1,5 +1,6 @@
 fastapi[all]>=0.96
 SQLAlchemy>=2.0
+streaming_form_data==1.16.0
 alembic==1.11.1
 kink>=0.8.0
 numpy==1.24.4 # Need to update this to numpy>2, crashes badly

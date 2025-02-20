@@ -7,7 +7,6 @@ import pytest
 from datasets import DatasetDict
 from sklearn.exceptions import NotFittedError
 from sklearn.utils.validation import check_is_fitted
-from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders.classes.csv_dataloader import CSVDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import (
@@ -29,12 +28,8 @@ def tabular_model_fixture():
     test_dataset_path = "tests/back/models/iris.csv"
     dataloader_test = CSVDataLoader()
 
-    with open(test_dataset_path, "r") as file:
-        csv_binary = io.BytesIO(bytes(file.read(), encoding="utf8"))
-        file = UploadFile(csv_binary)
-
     datasetdict = dataloader_test.load_data(
-        filepath_or_buffer=file,
+        filepath_or_buffer=test_dataset_path,
         temp_path="tests/back/models",
         params={"separator": ","},
     )

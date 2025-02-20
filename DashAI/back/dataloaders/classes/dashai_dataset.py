@@ -799,3 +799,42 @@ def update_dataset_splits(
         "validation": val_indexes,
     }
     return dataset
+
+
+def prepare_for_experiment(
+    dataset: DashAIDataset, splits: dict, output_columns: List[str]
+) -> DatasetDict:
+    """Prepare the dataset for an experiment by updating the splits configuration"""
+    splitType = splits.get("splitType")
+    if splitType == "manual" or splitType == "predefined":
+        splits_index = splits
+        prepared_dataset = split_dataset(
+            dataset,
+            train_indexes=splits_index["train"],
+            test_indexes=splits_index["test"],
+            val_indexes=splits_index["validation"],
+        )
+    else:
+        n = len(dataset)
+        if splits.get("stratify", False):
+            output_column = output_columns
+            labels = dataset[output_column]
+        else:
+            labels = None
+        train_indexes, test_indexes, val_indexes = split_indexes(
+            n,
+            splits["train"],
+            splits["test"],
+            splits["validation"],
+            shuffle=splits.get("shuffle", False),
+            seed=splits.get("seed", None),
+            stratify=splits.get("stratify", False),
+            labels=labels,
+        )
+        prepared_dataset = split_dataset(
+            dataset,
+            train_indexes=train_indexes,
+            test_indexes=test_indexes,
+            val_indexes=val_indexes,
+        )
+    return prepared_dataset

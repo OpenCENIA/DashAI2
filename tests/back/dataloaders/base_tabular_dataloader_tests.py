@@ -9,7 +9,6 @@ import pytest
 from datasets import DatasetDict
 from datasets.builder import DatasetGenerationError
 from fastapi.datastructures import Headers
-from starlette.datastructures import UploadFile
 
 from DashAI.back.dataloaders import BaseDataLoader
 from DashAI.back.dataloaders.classes.dashai_dataset import DashAIDataset, split_dataset
@@ -21,17 +20,8 @@ def _isclose(a: int, b: int, tol: int = 2) -> bool:
     return abs(a - b) <= tol
 
 
-def _read_file_wrapper(dataset_path: pathlib.Path) -> UploadFile:
-    try:
-        with open(dataset_path, "r") as file:
-            loaded_bytes = file.read()
-            bytes_buffer = io.BytesIO(bytes(loaded_bytes, encoding="utf8"))
-            file = UploadFile(bytes_buffer)
-    except UnicodeDecodeError:
-        with open(dataset_path, "rb") as file:
-            loaded_bytes = file.read()
-            bytes_buffer = io.BytesIO(loaded_bytes)
-            file = UploadFile(bytes_buffer)
+def _read_file_wrapper(dataset_path: pathlib.Path) -> str:
+    file = str(dataset_path)
 
     return file
 
@@ -125,18 +115,12 @@ class BaseTabularDataLoaderTester:
         dataloder_instance = self.dataloader_cls()
 
         # open the dataset
-        with open(dataset_path, "rb") as file:
-            upload_file = UploadFile(
-                filename=str(dataset_path),
-                file=file,
-                headers=Headers({"Content-Type": "application/zip"}),
-            )
 
-            dataset = dataloder_instance.load_data(
-                filepath_or_buffer=upload_file,
-                temp_path="tests/back/dataloaders/iris",
-                params=params,
-            )
+        dataset = dataloder_instance.load_data(
+            filepath_or_buffer=str(dataset_path),
+            temp_path="tests/back/dataloaders/iris",
+            params=params,
+        )
         dataset = split_dataset(dataset)
 
         # check each dataset of the datasetdict.
@@ -189,7 +173,7 @@ class BaseTabularDataLoaderTester:
         ):
             dataloder_instance.load_data(
                 filepath_or_buffer=file,
-                temp_path="tests/back/dataloaders",
+                temp_path="tests/back/dataloaders/iris",
                 params=params,
             )
 
@@ -223,6 +207,6 @@ class BaseTabularDataLoaderTester:
         ):
             dataloder_instance.load_data(
                 filepath_or_buffer=file,
-                temp_path="tests/back/dataloaders",
+                temp_path="tests/back/dataloaders/iris",
                 params=params,
             )

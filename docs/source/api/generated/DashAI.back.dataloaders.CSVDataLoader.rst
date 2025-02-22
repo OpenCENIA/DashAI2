@@ -17,6 +17,7 @@
       ~CSVDataLoader.extract_files
       ~CSVDataLoader.get_schema
       ~CSVDataLoader.load_data
+      ~CSVDataLoader.prepare_files
       ~CSVDataLoader.validate_and_transform
    
    

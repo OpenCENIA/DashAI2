@@ -17,6 +17,7 @@
       ~JSONDataLoader.extract_files
       ~JSONDataLoader.get_schema
       ~JSONDataLoader.load_data
+      ~JSONDataLoader.prepare_files
       ~JSONDataLoader.validate_and_transform
    
    

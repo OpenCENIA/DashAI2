@@ -16,10 +16,10 @@
       ~DistilBertTransformer.__init__
       ~DistilBertTransformer.fit
       ~DistilBertTransformer.get_schema
-      ~DistilBertTransformer.get_tokenizer
       ~DistilBertTransformer.load
       ~DistilBertTransformer.predict
       ~DistilBertTransformer.save
+      ~DistilBertTransformer.tokenize_data
       ~DistilBertTransformer.validate_and_transform
    
    

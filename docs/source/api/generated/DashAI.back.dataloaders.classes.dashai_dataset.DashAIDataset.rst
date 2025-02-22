@@ -47,8 +47,10 @@
       ~DashAIDataset.get_index
       ~DashAIDataset.get_nearest_examples
       ~DashAIDataset.get_nearest_examples_batch
+      ~DashAIDataset.get_split
       ~DashAIDataset.is_index_initialized
       ~DashAIDataset.iter
+      ~DashAIDataset.keys
       ~DashAIDataset.list_indexes
       ~DashAIDataset.load_elasticsearch_index
       ~DashAIDataset.load_faiss_index
@@ -96,6 +98,7 @@
 
    .. autosummary::
    
+      ~DashAIDataset.arrow_table
       ~DashAIDataset.builder_name
       ~DashAIDataset.cache_files
       ~DashAIDataset.citation

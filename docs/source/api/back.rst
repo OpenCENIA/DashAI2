@@ -28,6 +28,8 @@ Tasks
    DashAI.back.tasks.TextClassificationTask
    DashAI.back.tasks.TranslationTask
 
+.. _models:
+
 Models
 ======
 
@@ -97,6 +99,7 @@ Jobs
 
    DashAI.back.job.ExplainerJob
    DashAI.back.job.ModelJob
+   DashAI.back.job.PredictJob
 
 Explainers
 ==========

@@ -17,6 +17,7 @@
       ~ImageDataLoader.extract_files
       ~ImageDataLoader.get_schema
       ~ImageDataLoader.load_data
+      ~ImageDataLoader.prepare_files
       ~ImageDataLoader.validate_and_transform
    
    

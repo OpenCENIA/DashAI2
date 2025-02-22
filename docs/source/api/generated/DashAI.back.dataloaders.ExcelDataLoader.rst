@@ -17,6 +17,7 @@
       ~ExcelDataLoader.extract_files
       ~ExcelDataLoader.get_schema
       ~ExcelDataLoader.load_data
+      ~ExcelDataLoader.prepare_files
       ~ExcelDataLoader.validate_and_transform
    
    

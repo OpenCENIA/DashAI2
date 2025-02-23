@@ -158,8 +158,8 @@ def create_run(client: TestClient, experiment_id: int):
                 "n_trials": 10,
                 "sampler": "TPESampler",
                 "pruner": "None",
-                "metric": "DummyMetric",
             },
+            goal_metric="Accuracy",
             name="Run",
         )
         db.add(run)

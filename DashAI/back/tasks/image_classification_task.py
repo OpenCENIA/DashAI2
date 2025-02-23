@@ -11,6 +11,8 @@ class ImageClassificationTask(BaseTask):
     Here you can change the methods provided by class Task.
     """
 
+    COMPATIBLE_COMPONENTS = ["Accuracy", "F1", "Precision", "Recall"]
+
     metadata: dict = {
         "inputs_types": [Image],
         "outputs_types": [ClassLabel],

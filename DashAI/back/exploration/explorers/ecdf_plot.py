@@ -18,7 +18,6 @@ from DashAI.back.core.schema_fields import (
 )
 from DashAI.back.dataloaders.classes.dashai_dataset import (  # ClassLabel, Value,
     DashAIDataset,
-    DatasetDict,
 )
 from DashAI.back.dependencies.database.models import Exploration, Explorer
 from DashAI.back.exploration.base_explorer import BaseExplorer, BaseExplorerSchema

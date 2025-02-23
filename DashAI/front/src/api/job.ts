@@ -40,6 +40,20 @@ export const enqueueExplorerJob = async (
   return response.data;
 };
 
+export const enqueuePredictionJob = async (
+  run_id: number,
+  id: number,
+  json_filename: string,
+): Promise<object> => {
+  const data = {
+    job_type: "PredictJob",
+    kwargs: { run_id: run_id, id: id, json_filename: json_filename },
+  };
+
+  const response = await api.post<object>("/v1/job/", data);
+  return response.data;
+};
+
 export const startJobQueue = async (
   stopWhenQueueEmpties: boolean | undefined,
 ): Promise<object> => {

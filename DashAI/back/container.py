@@ -33,8 +33,8 @@ from DashAI.back.exploration import (
     ScatterPlotExplorer,
     WordcloudExplorer,
 )
-from DashAI.back.job import ExplainerJob, ExplorerJob, ModelJob
-from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall
+from DashAI.back.job import ExplainerJob, ExplorerJob, ModelJob, PredictJob
+from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall, Ter
 from DashAI.back.models import (
     SVC,
     BagOfWordsTextClassificationModel,
@@ -102,6 +102,7 @@ INITIAL_COMPONENTS = [
     Precision,
     Recall,
     Bleu,
+    Ter,
     MAE,
     RMSE,
     # Optimizers
@@ -111,6 +112,7 @@ INITIAL_COMPONENTS = [
     ExplainerJob,
     ModelJob,
     ExplorerJob,
+    PredictJob,
     # Explainers
     KernelShap,
     PartialDependence,

@@ -12,8 +12,6 @@ splits = json.dumps(
         "train": 0.5,
         "test": 0.2,
         "validation": 0.3,
-        "is_random": True,
-        "has_changed": True,
         "seed": 42,
         "shuffle": True,
         "stratify": False,
@@ -27,12 +25,9 @@ def create_dataset(client):
     abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
     with open(abs_file_path, "rb") as csv:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "CSVDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "DummyDataset",
-                                    "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,
@@ -45,11 +40,24 @@ def create_dataset(client):
                                         "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", csv, "text/csv")},
+            "url": "",
+        }
+        files = {"file": ("iris.csv", csv, "text/csv")}
+        headers = {"filename": "iris.csv"}
+
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
-    return response.json()["id"]
+
+    dataset_id = response.json()["id"]
+
+    yield dataset_id
+
+    response = client.delete(f"/api/v1/dataset/{dataset_id}")
+    assert response.status_code == 204, response.text
 
 
 @pytest.fixture(scope="module", name="response_1")

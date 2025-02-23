@@ -2,7 +2,7 @@ from typing import Dict
 
 from pydantic import BaseModel, ConfigDict
 
-
+"""
 class SplitParams(BaseModel):
     train_size: float = 0.8
     test_size: float = 0.1
@@ -13,6 +13,7 @@ class MoreOptionsParams(BaseModel):
     shuffle: bool = True
     seed: int = 0
     statify: bool = False
+"""
 
 
 class DatasetParams(BaseModel):
@@ -20,9 +21,6 @@ class DatasetParams(BaseModel):
 
     dataloader: str
     name: str
-    splits_in_folders: bool = False
-    splits: SplitParams
-    more_options: MoreOptionsParams
 
 
 class ColumnSpecItemParams(BaseModel):

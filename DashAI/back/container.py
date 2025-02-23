@@ -17,8 +17,24 @@ from DashAI.back.explainability import (
     PartialDependence,
     PermutationFeatureImportance,
 )
-from DashAI.back.job import ExplainerJob, ModelJob
-from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall
+from DashAI.back.exploration import (
+    BoxPlotExplorer,
+    CorrelationMatrixExplorer,
+    CovarianceMatrixExplorer,
+    DensityHeatmapExplorer,
+    DescribeExplorer,
+    ECDFPlotExplorer,
+    HistogramPlotExplorer,
+    MultiColumnBoxPlotExplorer,
+    ParallelCategoriesExplorer,
+    ParallelCordinatesExplorer,
+    RowExplorer,
+    ScatterMatrixExplorer,
+    ScatterPlotExplorer,
+    WordcloudExplorer,
+)
+from DashAI.back.job import ExplainerJob, ExplorerJob, ModelJob, PredictJob
+from DashAI.back.metrics import F1, MAE, RMSE, Accuracy, Bleu, Precision, Recall, Ter
 from DashAI.back.models import (
     SVC,
     BagOfWordsTextClassificationModel,
@@ -38,10 +54,7 @@ from DashAI.back.models import (
     RidgeRegression,
     ViTTransformer,
 )
-from DashAI.back.optimizers import (
-    HyperOptOptimizer,
-    OptunaOptimizer,
-)
+from DashAI.back.optimizers import HyperOptOptimizer, OptunaOptimizer
 from DashAI.back.tasks import (
     ImageClassificationTask,
     RegressionTask,
@@ -89,6 +102,7 @@ INITIAL_COMPONENTS = [
     Precision,
     Recall,
     Bleu,
+    Ter,
     MAE,
     RMSE,
     # Optimizers
@@ -97,10 +111,27 @@ INITIAL_COMPONENTS = [
     # Jobs
     ExplainerJob,
     ModelJob,
+    ExplorerJob,
+    PredictJob,
     # Explainers
     KernelShap,
     PartialDependence,
     PermutationFeatureImportance,
+    # Explorers
+    DescribeExplorer,
+    ScatterPlotExplorer,
+    WordcloudExplorer,
+    RowExplorer,
+    BoxPlotExplorer,
+    MultiColumnBoxPlotExplorer,
+    CorrelationMatrixExplorer,
+    CovarianceMatrixExplorer,
+    DensityHeatmapExplorer,
+    ECDFPlotExplorer,
+    HistogramPlotExplorer,
+    ScatterMatrixExplorer,
+    ParallelCategoriesExplorer,
+    ParallelCordinatesExplorer,
 ]
 
 

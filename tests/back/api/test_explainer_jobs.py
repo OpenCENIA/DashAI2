@@ -40,12 +40,9 @@ def create_dataset(client):
     abs_file_path = os.path.join(os.path.dirname(__file__), "iris.csv")
 
     with open(abs_file_path, "rb") as csv:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "CSVDataLoader",
+        data_form = {
+            "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "DummyDataset6",
-                                    "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.8,
                                         "test_size": 0.1,
@@ -58,11 +55,22 @@ def create_dataset(client):
                                         "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", csv, "text/csv")},
+            "url": "",
+        }
+        files = {"file": ("iris.csv", csv, "text/csv")}
+        headers = {"filename": "iris.csv"}
+        response = client.post(
+            "/api/v1/dataset/",
+            data=data_form,
+            files=files,
+            headers=headers,
         )
-    return response.json()["id"]
+    dataset_id = response.json()["id"]
+
+    yield dataset_id
+
+    response = client.delete(f"/api/v1/dataset/{dataset_id}")
+    assert response.status_code == 204, response.text
 
 
 class DummyTask(BaseTask):

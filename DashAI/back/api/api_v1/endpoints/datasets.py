@@ -1,13 +1,20 @@
+import gc
+import json
 import logging
 import os
 import shutil
+import tempfile
 from typing import Any, Dict
+from urllib.parse import unquote
 
-from fastapi import APIRouter, Depends, File, Form, Response, UploadFile, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.exceptions import HTTPException
 from kink import di, inject
 from sqlalchemy import exc
 from sqlalchemy.orm.session import sessionmaker
+from streaming_form_data import StreamingFormDataParser
+from streaming_form_data.targets import FileTarget, ValueTarget
+from streaming_form_data.validators import MaxSizeValidator
 
 from DashAI.back.api.api_v1.schemas.datasets_params import (
     DatasetParams,
@@ -20,9 +27,6 @@ from DashAI.back.dataloaders.classes.dashai_dataset import (
     get_dataset_info,
     load_dataset,
     save_dataset,
-    split_dataset,
-    split_indexes,
-    to_dashai_dataset,
     update_columns_spec,
 )
 from DashAI.back.dependencies.database.models import Dataset
@@ -136,7 +140,7 @@ async def get_sample(
                     detail="Dataset not found",
                 )
             dataset: DashAIDataset = load_dataset(f"{file_path}/dataset")
-            sample = dataset["train"].sample(n=10)
+            sample = dataset.sample(n=10)
         except exc.SQLAlchemyError as e:
             logger.exception(e)
             raise HTTPException(
@@ -226,9 +230,7 @@ async def get_types(
 @router.post("/", status_code=status.HTTP_201_CREATED)
 @inject
 async def upload_dataset(
-    params: str = Form(),
-    url: str = Form(None),
-    file: UploadFile = File(None),
+    request: Request,
     component_registry: ComponentRegistry = Depends(lambda: di["component_registry"]),
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
     config: Dict[str, Any] = Depends(lambda: di["config"]),
@@ -237,14 +239,8 @@ async def upload_dataset(
 
     Parameters
     ----------
-    params : str, optional
-        A Dict containing configuration options for the new dataset.
-    url : str, optional
-        URL of the dataset file, mutually exclusive with uploading a file, by default
-        Form(None).
-    file : UploadFile, optional
-        File object containing the dataset data, mutually exclusive with
-        providing a URL, by default File(None).
+    request: Request
+        The request object containing the dataset file and metadata.
     component_registry : ComponentRegistry
         Registry containing the current app available components.
     session_factory : Callable[..., ContextManager[Session]]
@@ -258,69 +254,75 @@ async def upload_dataset(
     Dataset
         The created dataset.
     """
-    logger.debug("Creating a new dataset.")
-    logger.debug("Params: %s", str(params))
 
-    parsed_params = parse_params(DatasetParams, params)
-    dataloader = component_registry[parsed_params.dataloader]["class"]()
-    folder_path = config["DATASETS_PATH"] / parsed_params.name
-
-    # create dataset path
-    try:
-        logger.debug("Trying to create a new dataset path: %s", folder_path)
-        folder_path.mkdir(parents=True)
-    except FileExistsError as e:
-        logger.exception(e)
+    MAX_FILE_SIZE = 1024 * 1024 * 1024 * 4  # 4GB
+    filename = request.headers.get("filename")
+    if not filename:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="A dataset with this name already exists",
-        ) from e
-
-    # save dataset
-    try:
-        logger.debug("Storing dataset in %s", folder_path)
-        new_dataset = dataloader.load_data(
-            filepath_or_buffer=file if file is not None else url,
-            temp_path=str(folder_path),
-            params=parsed_params.model_dump(),
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Filename header is missing",
         )
 
-        new_dataset = to_dashai_dataset(new_dataset)
+    filename = unquote(filename)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        file_path = os.path.join(temp_dir, filename)
+        file = FileTarget(file_path, validator=MaxSizeValidator(MAX_FILE_SIZE))
+        params = ValueTarget()
+        parser = StreamingFormDataParser(headers=request.headers)
+        parser.register("file", file)
+        parser.register("params", params)
+        async for chunk in request.stream():
+            parser.data_received(chunk)
+        params = params.value.decode()
+        params_dict = json.loads(params)
+        url = params_dict.get("url", "")
 
-        if not parsed_params.splits_in_folders:
-            n = len(new_dataset["train"])
-            train_indexes, test_indexes, val_indexes = split_indexes(
-                n,
-                parsed_params.splits.train_size,
-                parsed_params.splits.test_size,
-                parsed_params.splits.val_size,
-                parsed_params.more_options.seed,
-                parsed_params.more_options.shuffle,
+        logger.debug("Creating a new dataset.")
+        logger.debug("Params: %s", str(params))
+
+        parsed_params = parse_params(DatasetParams, params)
+        dataloader = component_registry[parsed_params.dataloader]["class"]()
+        folder_path = config["DATASETS_PATH"] / parsed_params.name
+
+        # create dataset path
+        try:
+            logger.debug("Trying to create a new dataset path: %s", folder_path)
+            folder_path.mkdir(parents=True)
+        except FileExistsError as e:
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="A dataset with this name already exists",
+            ) from e
+
+        # save dataset
+        try:
+            logger.debug("Storing dataset in %s", folder_path)
+            new_dataset = dataloader.load_data(
+                filepath_or_buffer=str(file_path) if file_path is not None else url,
+                temp_path=str(temp_dir),
+                params=parsed_params.model_dump(),
             )
-            new_dataset = split_dataset(
-                new_dataset["train"],
-                train_indexes=train_indexes,
-                test_indexes=test_indexes,
-                val_indexes=val_indexes,
-            )
+            gc.collect()
+
             dataset_path = folder_path / "dataset"
-        logger.debug("Saving dataset in %s", str(dataset_path))
-        save_dataset(new_dataset, dataset_path)
+            logger.debug("Saving dataset in %s", str(dataset_path))
+            save_dataset(new_dataset, dataset_path)
 
-        # - NOTE -------------------------------------------------------------
-        # Is important that the DatasetDict dataset it be saved in "/dataset"
-        # because for images and audio is also saved the original files,
-        # So we have the original files and the "dataset" folder
-        # with the DatasetDict that we use to handle the data.
-        # --------------------------------------------------------------------
+            # - NOTE -------------------------------------------------------------
+            # Is important that the DatasetDict dataset it be saved in "/dataset"
+            # because for images and audio is also saved the original files,
+            # So we have the original files and the "dataset" folder
+            # with the DatasetDict that we use to handle the data.
+            # --------------------------------------------------------------------
 
-    except OSError as e:
-        shutil.rmtree(folder_path, ignore_errors=True)
-        logger.exception(e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to read file",
-        ) from e
+        except OSError as e:
+            shutil.rmtree(folder_path, ignore_errors=True)
+            logger.exception(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to read file",
+            ) from e
 
     with session_factory() as db:
         logger.debug("Storing dataset metadata in database.")
@@ -403,6 +405,7 @@ async def update_dataset(
     dataset_id: int,
     params: DatasetUpdateParams,
     session_factory: sessionmaker = Depends(lambda: di["session_factory"]),
+    config: Dict[str, Any] = Depends(lambda: di["config"]),
 ):
     """Updates the name and/or task name of a dataset with the provided ID.
 
@@ -430,6 +433,8 @@ async def update_dataset(
                 update_columns_spec(f"{dataset.file_path}/dataset", params.columns)
             if params.name:
                 setattr(dataset, "name", params.name)
+                new_folder_path = config["DATASETS_PATH"] / params.name
+                os.rename(dataset.file_path, new_folder_path)
                 db.commit()
                 db.refresh(dataset)
                 return dataset

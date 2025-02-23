@@ -93,12 +93,9 @@ def fixture_dataset_id(client: TestClient):
     test_dataset = "iris.csv"
     abs_file_path = os.path.join(script_dir, test_dataset)
     with open(abs_file_path, "rb") as csv:
-        response = client.post(
-            "/api/v1/dataset/",
-            data={
-                "params": """{  "dataloader": "CSVDataLoader",
+        form_data = {
+            "params": """{  "dataloader": "CSVDataLoader",
                                     "name": "test_csv3",
-                                    "splits_in_folders": false,
                                     "splits": {
                                         "train_size": 0.5,
                                         "test_size": 0.2,
@@ -111,9 +108,15 @@ def fixture_dataset_id(client: TestClient):
                                         "stratify": false
                                     }
                                 }""",
-                "url": "",
-            },
-            files={"file": ("filename", csv, "text/csv")},
+            "url": "",
+        }
+        files = {"file": ("iris.csv", csv, "text/csv")}
+        headers = {"filename": "iris.csv"}
+        response = client.post(
+            "/api/v1/dataset/",
+            data=form_data,
+            files=files,
+            headers=headers,
         )
     assert response.status_code == 201, response.text
     dataset = response.json()
@@ -146,6 +149,7 @@ def create_experiment(client: TestClient, dataset_id: int):
                     "seed": 42,
                     "shuffle": True,
                     "stratify": False,
+                    "splitType": "random",
                 }
             ),
         )
@@ -317,7 +321,6 @@ def test_execute_jobs(client: TestClient, run_id: int, failed_run_id: int):
 
     response = client.get(f"/api/v1/run/{run_id}")
     data = response.json()
-    print(data["status"])
     assert data["status"] == 3
     assert isinstance(data["train_metrics"], dict)
     assert "DummyMetric" in data["train_metrics"]

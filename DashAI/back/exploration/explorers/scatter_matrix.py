@@ -61,11 +61,10 @@ class ScatterMatrixExplorer(BaseExplorer):
         super().__init__(**kwargs)
 
     def prepare_dataset(
-        self, dataset_dict: DatasetDict, columns: List[Dict[str, Any]]
+        self, loaded_dataset: DashAIDataset, columns: List[Dict[str, Any]]
     ) -> DashAIDataset:
-        split = list(dataset_dict.keys())[0]
         explorer_columns = [col["columnName"] for col in columns]
-        dataset_columns = dataset_dict[split].column_names
+        dataset_columns = loaded_dataset.column_names
 
         if self.color_column is not None:
             if isinstance(self.color_column, int):
@@ -91,7 +90,7 @@ class ScatterMatrixExplorer(BaseExplorer):
                     columns.append({"columnName": col})
             self.simbol_column = col
 
-        return super().prepare_dataset(dataset_dict, columns)
+        return super().prepare_dataset(loaded_dataset, columns)
 
     def launch_exploration(self, dataset: DashAIDataset, explorer_info: Explorer):
         _df = dataset.to_pandas()

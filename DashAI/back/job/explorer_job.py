@@ -90,7 +90,7 @@ class ExplorerJob(BaseJob):
 
         # Load the dataset
         try:
-            dataset_dict = load_dataset(f"{dataset_info.file_path}/dataset")
+            loaded_dataset = load_dataset(f"{dataset_info.file_path}/dataset")
         except Exception as e:
             log.exception(e)
             explorer_info.set_status_as_error()
@@ -127,7 +127,7 @@ class ExplorerJob(BaseJob):
         # prepare the dataset
         try:
             prepared_dataset = explorer_instance.prepare_dataset(
-                dataset_dict, explorer_info.columns
+                loaded_dataset, explorer_info.columns
             )
         except Exception as e:
             log.exception(e)
